@@ -326,6 +326,74 @@ body{
 .pfill{height:100%;width:0%;border-radius:6px;background:linear-gradient(90deg,#ff9b3d,#ffd23d);transition:width .35s ease;}
 .goal-label{position:absolute;right:4px;top:-13px;font-size:11px;font-weight:800;letter-spacing:1px;color:#cfd2ff;z-index:3;}
 
+@keyframes swapShake{ 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 50%{transform:translateX(5px)} 75%{transform:translateX(-3px)} }
+/* ── Swap mode ── */
+.swap-dim{
+  position:fixed;inset:0;z-index:40;
+  background:rgba(2,4,18,0.78);
+  opacity:1;transition:opacity .25s ease;
+}
+.swap-dim.hidden{display:none;}
+/* board floats above the dim while in swap mode */
+#gameScreen.swap-mode .board-wrap{position:relative;z-index:41;}
+.swap-back{
+  position:fixed;z-index:42;
+  top:max(14px,env(safe-area-inset-top));left:14px;
+  width:42px;height:42px;border-radius:12px;
+  background:rgba(255,255,255,0.10);
+  border:1.5px solid rgba(255,255,255,0.35);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.swap-back.hidden{display:none;}
+.swap-banner{
+  position:fixed;z-index:42;
+  left:50%;transform:translateX(-50%);
+  bottom:max(26px,env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:14px;
+  pointer-events:none;
+  animation:swapBannerIn .35s ease;
+}
+.swap-banner.hidden{display:none;}
+@keyframes swapBannerIn{ from{opacity:0;transform:translateX(-50%) translateY(16px);} to{opacity:1;transform:translateX(-50%) translateY(0);} }
+.swap-banner-icon{
+  width:64px;height:64px;border-radius:16px;
+  background:rgba(255,255,255,0.06);
+  border:2px solid rgba(255,255,255,0.85);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 28px rgba(255,255,255,0.18);
+}
+.swap-banner-title{font-size:30px;font-weight:900;color:#fff;line-height:1.05;}
+.swap-banner-sub{font-size:13px;font-weight:700;color:#cfd2ff;}
+/* hammer strike on a tile (smash booster) */
+.smash-hammer{
+  position:absolute;z-index:8;
+  width:62%;height:62%;
+  left:55%;top:-30%;
+  pointer-events:none;
+  transform-origin:85% 85%;
+  animation:hammerStrike .38s cubic-bezier(.5,0,.7,1) forwards;
+}
+@keyframes hammerStrike{
+  0%  { transform:rotate(58deg);  opacity:0; }
+  25% { transform:rotate(58deg);  opacity:1; }
+  70% { transform:rotate(-12deg); opacity:1; }
+  82% { transform:rotate(-4deg);  opacity:1; }
+  100%{ transform:rotate(-12deg); opacity:0; }
+}
+.tile.smash-hit{ animation:smashShake .30s ease .22s; }
+@keyframes smashShake{
+  0%,100%{ filter:brightness(1); }
+  30%{ filter:brightness(1.8); }
+  40%{ filter:brightness(1.2); }
+}
+/* dashed selection on a tile */
+.tile.swap-sel{
+  outline:3px dashed rgba(255,255,255,0.95);
+  outline-offset:3px;
+  z-index:5;
+}
+
 /* Board */
 .board-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;}
 #board{position:relative;width:100%;max-width:400px;}
@@ -560,6 +628,45 @@ body{
 /* ================================================================
    SHOP MODAL
 ================================================================ */
+/* ── Simulated rewarded ad overlay ── */
+#adOverlay{
+  position:fixed;inset:0;z-index:998;
+  background:rgba(3,5,20,0.92);
+  display:flex;align-items:center;justify-content:center;
+}
+#adOverlay.hidden{display:none;}
+.ad-sim-card{
+  width:min(86vw,340px);
+  background:linear-gradient(180deg,#16204e,#0c1234);
+  border:2px solid rgba(120,140,255,0.35);
+  border-radius:20px;padding:16px;
+  display:flex;flex-direction:column;gap:14px;align-items:center;
+}
+.ad-sim-top{width:100%;display:flex;justify-content:space-between;align-items:center;}
+.ad-sim-badge{background:#37b94a;color:#fff;font-weight:900;font-size:13px;padding:3px 10px;border-radius:7px;letter-spacing:1px;}
+.ad-sim-timer{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:#fff;}
+.ad-sim-screen{
+  width:100%;aspect-ratio:16/10;border-radius:14px;
+  background:repeating-linear-gradient(45deg,#1a2a6e 0 14px,#16235c 14px 28px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+}
+.ad-sim-play{
+  width:64px;height:64px;border-radius:50%;
+  background:#1a80d0;
+  display:flex;align-items:center;justify-content:center;
+  animation:adPulse 1.2s ease-in-out infinite;
+  padding-left:4px;
+}
+@keyframes adPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.ad-sim-label{font-size:13px;font-weight:800;letter-spacing:2px;color:#aab;text-transform:uppercase;}
+.ad-sim-claim{
+  width:100%;padding:13px;border:none;border-radius:13px;
+  background:linear-gradient(180deg,#5ddc6a,#2fa742);
+  color:#fff;font-family:inherit;font-weight:900;font-size:16px;letter-spacing:1px;
+  box-shadow:0 4px 0 #1f7d2c;cursor:pointer;
+}
+.ad-sim-claim.hidden{display:none;}
+
 #shopModal{
   position:fixed;inset:0;z-index:100;
   display:none;align-items:stretch;justify-content:center;
@@ -2228,105 +2335,165 @@ body{
               </clipPath>
             </defs>
 
-            <!-- ══ CROWN — premium 5-peak ══ -->
+            <!-- ══ CROWN — premium royal (faceted diamond, rubies, pearls, jeweled band) ══ -->
             <defs>
               <linearGradient id="hbCrownFront" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%"   stop-color="#ffe97a"/>
-                <stop offset="40%"  stop-color="#f5a800"/>
-                <stop offset="100%" stop-color="#b85e00"/>
+              <stop offset="0%"   stop-color="#fff3a0"/>
+              <stop offset="22%"  stop-color="#ffd84d"/>
+              <stop offset="50%"  stop-color="#f5a800"/>
+              <stop offset="78%"  stop-color="#d97e00"/>
+              <stop offset="100%" stop-color="#a85400"/>
               </linearGradient>
-              <linearGradient id="hbCrownSide" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%"   stop-color="#e89500"/>
-                <stop offset="100%" stop-color="#8a4000"/>
+              <linearGradient id="hbCrownBand" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%"   stop-color="#ffe566"/>
+              <stop offset="45%"  stop-color="#f0a000"/>
+              <stop offset="100%" stop-color="#9a4c00"/>
               </linearGradient>
-              <radialGradient id="hbGemBlue" cx="35%" cy="30%">
-                <stop offset="0%"   stop-color="#a0e8ff"/>
-                <stop offset="50%"  stop-color="#1a9fff"/>
-                <stop offset="100%" stop-color="#0040c0"/>
+              <linearGradient id="hbGoldSpec" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="rgba(255,255,255,0)"/>
+              <stop offset="45%"  stop-color="rgba(255,255,240,0.85)"/>
+              <stop offset="55%"  stop-color="rgba(255,255,240,0.85)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+              </linearGradient>
+              <radialGradient id="hbGemBlue" cx="38%" cy="28%" r="80%">
+              <stop offset="0%"   stop-color="#d8f6ff"/>
+              <stop offset="35%"  stop-color="#5cc8ff"/>
+              <stop offset="70%"  stop-color="#1273e8"/>
+              <stop offset="100%" stop-color="#0a2fa8"/>
               </radialGradient>
-              <radialGradient id="hbGemRed" cx="35%" cy="30%">
-                <stop offset="0%"   stop-color="#ffaaaa"/>
-                <stop offset="50%"  stop-color="#ee2222"/>
-                <stop offset="100%" stop-color="#880000"/>
+              <radialGradient id="hbGemRed" cx="38%" cy="28%" r="80%">
+              <stop offset="0%"   stop-color="#ffd0d0"/>
+              <stop offset="40%"  stop-color="#ff5050"/>
+              <stop offset="75%"  stop-color="#d81818"/>
+              <stop offset="100%" stop-color="#700000"/>
               </radialGradient>
+              <radialGradient id="hbPearl" cx="35%" cy="30%" r="75%">
+              <stop offset="0%"   stop-color="#fffdf0"/>
+              <stop offset="55%"  stop-color="#ffe060"/>
+              <stop offset="100%" stop-color="#c07800"/>
+              </radialGradient>
+              <radialGradient id="hbWarmGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stop-color="rgba(255,180,40,0.40)"/>
+              <stop offset="60%"  stop-color="rgba(255,160,20,0.18)"/>
+              <stop offset="100%" stop-color="rgba(255,150,0,0)"/>
+              </radialGradient>
+              <linearGradient id="hbCrownShade" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="rgba(255,250,200,0.22)"/>
+              <stop offset="35%"  stop-color="rgba(255,250,200,0)"/>
+              <stop offset="65%"  stop-color="rgba(120,50,0,0)"/>
+              <stop offset="100%" stop-color="rgba(120,50,0,0.30)"/>
+              </linearGradient>
               <filter id="hbCrownGlow" x="-40%" y="-40%" width="180%" height="180%">
-                <feGaussianBlur stdDeviation="4" result="b"/>
-                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              <feGaussianBlur stdDeviation="4" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
               </filter>
               <filter id="hbGemGlow" x="-60%" y="-60%" width="220%" height="220%">
-                <feGaussianBlur stdDeviation="3" result="b"/>
-                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              <feGaussianBlur stdDeviation="2.2" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
               </filter>
+
             </defs>
 
             <!-- Warm glow behind crown -->
-            <ellipse cx="110" cy="62" rx="52" ry="18" fill="rgba(255,160,0,0.22)" filter="url(#hbCrownGlow)"/>
+            <ellipse cx="110" cy="50" rx="62" ry="30" fill="url(#hbWarmGlow)"/>
 
             <!-- Ray dashes -->
-            <g stroke="#ffd23d" stroke-width="3" stroke-linecap="round" opacity="0.8">
-              <line x1="52"  y1="46" x2="40"  y2="38"/>
-              <line x1="47"  y1="60" x2="33"  y2="59"/>
-              <line x1="56"  y1="72" x2="44"  y2="78"/>
-              <line x1="168" y1="46" x2="180" y2="38"/>
-              <line x1="173" y1="60" x2="187" y2="59"/>
-              <line x1="164" y1="72" x2="176" y2="78"/>
+            <g stroke="#ffd23d" stroke-width="3" stroke-linecap="round" opacity="0.85">
+            <line x1="52"  y1="44" x2="40"  y2="36"/>
+            <line x1="47"  y1="58" x2="33"  y2="57"/>
+            <line x1="56"  y1="70" x2="44"  y2="76"/>
+            <line x1="168" y1="44" x2="180" y2="36"/>
+            <line x1="173" y1="58" x2="187" y2="57"/>
+            <line x1="164" y1="70" x2="176" y2="76"/>
             </g>
             <!-- Sparkles -->
             <g fill="#7ad4ff">
-              <path d="M34 36 l1.8-4.5 1.8 4.5 4.5 1.8-4.5 1.8-1.8 4.5-1.8-4.5-4.5-1.8z"/>
-              <path d="M176 35 l1.6-4 1.6 4 4 1.6-4 1.6-1.6 4-1.6-4-4-1.6z"/>
+            <path d="M34 34 l1.8-4.5 1.8 4.5 4.5 1.8-4.5 1.8-1.8 4.5-1.8-4.5-4.5-1.8z"/>
+            <path d="M176 33 l1.6-4 1.6 4 4 1.6-4 1.6-1.6 4-1.6-4-4-1.6z"/>
             </g>
 
-            <!-- ── Crown body (5 peaks) ── -->
-            <!-- Shadow layer -->
-            <path d="M62 70 L68 38 L82 52 L94 24 L110 8 L126 24 L138 52 L152 38 L158 70 Z"
-                  fill="rgba(0,0,0,0.25)" transform="translate(2,4)"/>
-            <!-- Main body -->
-            <path d="M62 70 L68 38 L82 52 L94 24 L110 8 L126 24 L138 52 L152 38 L158 70 Z"
-                  fill="url(#hbCrownFront)"
-                  stroke="#8a4800" stroke-width="2" stroke-linejoin="round"/>
-            <!-- Face highlight -->
-            <path d="M68 70 L73 44 L85 56 L96 30 L110 16 L124 30 L135 56 L147 44 L152 70 Z"
-                  fill="rgba(255,248,160,0.22)"/>
-            <!-- Left inner shadow -->
-            <path d="M62 70 L68 38 L82 52 L94 24 L110 8 L110 70 Z"
-                  fill="rgba(0,0,0,0.10)"/>
+            <!-- Soft drop shadow of the whole crown -->
+            <path d="M62 70 L67 32 L76 50 Q81 57 86 50 L92 18 L97 44 Q101 50 105 44 L110 6
+            L115 44 Q119 50 123 44 L128 18 L134 50 Q139 57 144 50 L153 32 L158 70 Z"
+            fill="rgba(10,8,30,0.28)" transform="translate(2,3.5)"/>
 
-            <!-- ── Base band ── -->
-            <rect x="60" y="64" width="100" height="18" rx="9"
-                  fill="url(#hbCrownFront)" stroke="#7a4200" stroke-width="1.8"/>
-            <!-- Band top sheen -->
-            <rect x="64" y="65" width="92" height="7" rx="3.5"
-                  fill="rgba(255,250,160,0.50)"/>
-            <!-- Band bottom shadow -->
-            <rect x="60" y="76" width="100" height="6" rx="4"
-                  fill="rgba(0,0,0,0.20)"/>
-            <!-- Band rivets -->
-            <circle cx="74"  cy="73" r="3.5" fill="#ffe060" stroke="#8a5000" stroke-width="1.2"/>
-            <circle cx="146" cy="73" r="3.5" fill="#ffe060" stroke="#8a5000" stroke-width="1.2"/>
-            <circle cx="74"  cy="73" r="1.5" fill="rgba(255,255,255,0.6)"/>
-            <circle cx="146" cy="73" r="1.5" fill="rgba(255,255,255,0.6)"/>
+            <!-- ── Crown body: sharp peaks, curved valleys ── -->
+            <path d="M62 70 L67 32 L76 50 Q81 57 86 50 L92 18 L97 44 Q101 50 105 44 L110 6
+            L115 44 Q119 50 123 44 L128 18 L134 50 Q139 57 144 50 L153 32 L158 70 Z"
+            fill="url(#hbCrownFront)" stroke="#7a4200" stroke-width="2.2" stroke-linejoin="round"/>
 
-            <!-- ── Peak tip gems ── -->
-            <!-- Left peak — red gem -->
-            <polygon points="68,38 74,45 68,52 62,45"
-                     fill="url(#hbGemRed)" filter="url(#hbGemGlow)"
-                     stroke="#550000" stroke-width="1"/>
-            <polygon points="68,38 74,45 68,45 62,45" fill="rgba(255,200,200,0.4)"/>
-            <circle cx="66" cy="42" r="1.8" fill="rgba(255,255,255,0.75)"/>
-            <!-- Right peak — red gem -->
-            <polygon points="152,38 158,45 152,52 146,45"
-                     fill="url(#hbGemRed)" filter="url(#hbGemGlow)"
-                     stroke="#550000" stroke-width="1"/>
-            <polygon points="152,38 158,45 152,45 146,45" fill="rgba(255,200,200,0.4)"/>
-            <circle cx="150" cy="42" r="1.8" fill="rgba(255,255,255,0.75)"/>
+            <!-- Ambient 3D shade: smooth left-to-right gradient over the body -->
+            <path d="M62 70 L67 32 L76 50 Q81 57 86 50 L92 18 L97 44 Q101 50 105 44 L110 6
+            L115 44 Q119 50 123 44 L128 18 L134 50 Q139 57 144 50 L153 32 L158 70 Z"
+            fill="url(#hbCrownShade)"/>
+            <!-- Left rim light (outer edge only) -->
+            <path d="M62 70 L67 32 L69.8 42 L65.5 70 Z" fill="rgba(255,250,200,0.40)"/>
+            <!-- Inner bevel line -->
+            <path d="M66 66 L70 38 L78 52 Q81 55.5 84 52 L92 26 L98 46 Q101 48.5 104 46 L110 14
+            L116 46 Q119 48.5 122 46 L128 26 L136 52 Q139 55.5 142 52 L150 38 L154 66"
+            fill="none" stroke="rgba(255,240,150,0.35)" stroke-width="1.6" stroke-linejoin="round"/>
 
-            <!-- ── Centre top gem — large blue diamond ── -->
-            <polygon points="110,6 122,20 110,34 98,20"
-                     fill="url(#hbGemBlue)" filter="url(#hbGemGlow)"
-                     stroke="#003080" stroke-width="1.5"/>
-            <polygon points="110,6 122,20 110,20 98,20" fill="rgba(180,240,255,0.45)"/>
-            <circle cx="106" cy="13" r="3" fill="rgba(255,255,255,0.80)"/>
+            <!-- ── Pearls on outer peaks ── -->
+            <circle cx="67"  cy="29" r="4.6" fill="url(#hbPearl)" stroke="#8a5000" stroke-width="1.3"/>
+            <circle cx="65.4" cy="27.4" r="1.5" fill="rgba(255,255,255,0.9)"/>
+            <circle cx="153" cy="29" r="4.6" fill="url(#hbPearl)" stroke="#8a5000" stroke-width="1.3"/>
+            <circle cx="151.4" cy="27.4" r="1.5" fill="rgba(255,255,255,0.9)"/>
+
+            <!-- ── Faceted ruby on mid peaks ── -->
+            <g filter="url(#hbGemGlow)">
+            <polygon points="92,15 98,22 92,30 86,22" fill="url(#hbGemRed)" stroke="#5a0000" stroke-width="1.1"/>
+            <polygon points="92,15 98,22 92,22 86,22" fill="rgba(255,210,210,0.45)"/>
+            <polygon points="92,22 95,22 92,30 89,22" fill="rgba(90,0,0,0.35)"/>
+            <circle cx="90" cy="19" r="1.5" fill="rgba(255,255,255,0.9)"/>
+            </g>
+            <g filter="url(#hbGemGlow)">
+            <polygon points="128,15 134,22 128,30 122,22" fill="url(#hbGemRed)" stroke="#5a0000" stroke-width="1.1"/>
+            <polygon points="128,15 134,22 128,22 122,22" fill="rgba(255,210,210,0.45)"/>
+            <polygon points="128,22 131,22 128,30 125,22" fill="rgba(90,0,0,0.35)"/>
+            <circle cx="126" cy="19" r="1.5" fill="rgba(255,255,255,0.9)"/>
+            </g>
+
+            <!-- ── Brilliant-cut blue diamond on centre peak ── -->
+            <g filter="url(#hbGemGlow)">
+            <polygon points="110,-2 124,16 110,36 96,16"
+            fill="url(#hbGemBlue)" stroke="#082878" stroke-width="1.5" stroke-linejoin="round"/>
+            <!-- crown facets -->
+            <polygon points="110,-2 117,10 110,13 103,10" fill="rgba(225,250,255,0.65)"/>
+            <polygon points="110,-2 124,16 117,10" fill="rgba(140,220,255,0.45)"/>
+            <polygon points="110,-2 96,16 103,10" fill="rgba(255,255,255,0.30)"/>
+            <!-- girdle -->
+            <polygon points="96,16 103,10 110,13 117,10 124,16 117,18 110,16.5 103,18" fill="rgba(60,150,255,0.40)"/>
+            <!-- pavilion facets -->
+            <polygon points="96,16 103,18 110,36" fill="rgba(8,40,140,0.45)"/>
+            <polygon points="124,16 117,18 110,36" fill="rgba(20,80,200,0.35)"/>
+            <polygon points="103,18 110,16.5 117,18 110,36" fill="rgba(90,190,255,0.30)"/>
+            <!-- sparkle -->
+            <circle cx="105" cy="7" r="2.2" fill="rgba(255,255,255,0.95)"/>
+            <path d="M118 24 l1.2-3 1.2 3 3 1.2-3 1.2-1.2 3-1.2-3-3-1.2z" fill="rgba(255,255,255,0.85)"/>
+            </g>
+
+            <!-- ── Base band with jewels ── -->
+            <rect x="58" y="58" width="104" height="20" rx="10"
+            fill="url(#hbCrownBand)" stroke="#6e3a00" stroke-width="1.8"/>
+            <rect x="62" y="59.5" width="96" height="6" rx="3" fill="rgba(255,250,170,0.55)"/>
+            <rect x="58" y="71" width="104" height="7" rx="4" fill="rgba(60,20,0,0.28)"/>
+            <!-- jewel dots -->
+            <g stroke-width="1">
+            <circle cx="78"  cy="68" r="2.8" fill="url(#hbGemBlue)" stroke="#082878"/>
+            <circle cx="94"  cy="68" r="2.8" fill="url(#hbGemRed)"  stroke="#5a0000"/>
+            <circle cx="110" cy="68" r="3.4" fill="url(#hbGemBlue)" stroke="#082878"/>
+            <circle cx="126" cy="68" r="2.8" fill="url(#hbGemRed)"  stroke="#5a0000"/>
+            <circle cx="142" cy="68" r="2.8" fill="url(#hbGemBlue)" stroke="#082878"/>
+            </g>
+            <g fill="rgba(255,255,255,0.85)">
+            <circle cx="77"  cy="67" r="0.9"/>
+            <circle cx="93"  cy="67" r="0.9"/>
+            <circle cx="109" cy="66.8" r="1.1"/>
+            <circle cx="125" cy="67" r="0.9"/>
+            <circle cx="141" cy="67" r="0.9"/>
+            </g>
+            <!-- specular sweep across band -->
+            <rect x="58" y="58" width="104" height="20" rx="10" fill="url(#hbGoldSpec)" opacity="0.30"/>
 
             <!-- ══ CARD — blue rounded rectangle ══ -->
             <rect x="4" y="72" width="212" height="190" rx="26"
@@ -2461,6 +2628,24 @@ body{
 
 
   <!-- ===================== SHOP MODAL ===================== -->
+  <!-- ── SIMULATED REWARDED AD — placeholder until the CiDi SDK lands.
+       To integrate CiDi later, only the body of showRewardedAd() changes. ── -->
+  <div id="adOverlay" class="hidden">
+    <div class="ad-sim-card">
+      <div class="ad-sim-top">
+        <span class="ad-sim-badge">AD</span>
+        <span class="ad-sim-timer" id="adSimTimer">5</span>
+      </div>
+      <div class="ad-sim-screen">
+        <div class="ad-sim-play">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="#fff"><polygon points="6,3 21,12 6,21"/></svg>
+        </div>
+        <div class="ad-sim-label">Simulated Ad</div>
+      </div>
+      <button class="ad-sim-claim hidden" id="adSimClaim">CLAIM REWARD</button>
+    </div>
+  </div>
+
   <div id="shopModal">
     <div class="shop-sheet">
       <!-- Header -->
@@ -2551,7 +2736,7 @@ body{
             <div class="shop-row-name">REMOVE ADS</div>
             <div class="shop-row-desc">Remove all ads</div>
           </div>
-          <button class="shop-buy-btn remove-ads">15 ADs</button>
+          <button class="shop-buy-btn remove-ads" id="shopRemoveAds">15 ADs</button>
         </div>
 
         <!-- Watch Ad -->
@@ -2579,7 +2764,7 @@ body{
               <svg viewBox="0 0 40 44" width="16" height="16" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));"><path d="M9 9 H31 L38 17 L20 42 L2 17 Z" fill="#2a004a"/><polygon points="2,17 38,17 20,42" fill="#b32fe0"/><polygon points="2,17 20,17 20,42" fill="#d34bff"/><polygon points="38,17 20,17 20,42" fill="#8010b0"/><polygon points="9,9 2,17 13,17" fill="#9a20c0"/><polygon points="31,9 38,17 27,17" fill="#9a20c0"/><polygon points="9,9 31,9 27,17 13,17" fill="#f0aaff"/><polygon points="11,10.5 18,10.5 15.5,15 12.5,15" fill="#fff" opacity=".6"/><path d="M9 9 H31 L38 17 L20 42 L2 17 Z" fill="none" stroke="#1a0030" stroke-width="2" stroke-linejoin="round"/></svg>
             </div>
           </div>
-          <button class="shop-buy-btn free">
+          <button class="shop-buy-btn free" id="shopWatchAd">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff"><polygon points="5,3 19,12 5,21"/></svg>
             FREE
           </button>
@@ -2605,7 +2790,7 @@ body{
               100
             </div>
           </div>
-          <button class="shop-buy-btn">1 AD</button>
+          <button class="shop-buy-btn shop-pack" data-gems="100" data-ads="1">1 AD</button>
         </div>
 
         <!-- 300 gems -->
@@ -2628,7 +2813,7 @@ body{
               300
             </div>
           </div>
-          <button class="shop-buy-btn">2 ADs</button>
+          <button class="shop-buy-btn shop-pack" data-gems="300" data-ads="2">2 ADs</button>
         </div>
 
         <!-- 500 gems -->
@@ -2651,7 +2836,7 @@ body{
               500
             </div>
           </div>
-          <button class="shop-buy-btn">4 ADs</button>
+          <button class="shop-buy-btn shop-pack" data-gems="500" data-ads="4">4 ADs</button>
         </div>
 
         <!-- 1100 gems -->
@@ -2674,7 +2859,7 @@ body{
               1,100
             </div>
           </div>
-          <button class="shop-buy-btn">6 ADs</button>
+          <button class="shop-buy-btn shop-pack" data-gems="1100" data-ads="6">6 ADs</button>
         </div>
 
         <!-- 2500 gems -->
@@ -2697,7 +2882,7 @@ body{
               2,500
             </div>
           </div>
-          <button class="shop-buy-btn">8 ADs</button>
+          <button class="shop-buy-btn shop-pack" data-gems="2500" data-ads="8">8 ADs</button>
         </div>
 
         <!-- 5000 gems -->
@@ -2720,7 +2905,7 @@ body{
               5,000
             </div>
           </div>
-          <button class="shop-buy-btn">10 ADs</button>
+          <button class="shop-buy-btn shop-pack" data-gems="5000" data-ads="10">10 ADs</button>
         </div>
 
       </div><!-- end shop-list -->
@@ -3057,10 +3242,49 @@ body{
     </div>
 
     <!-- BOTTOM TOOLBAR -->
+    <!-- ── SWAP MODE overlay: dim layer, cancel arrow, first-time banner ── -->
+    <div id="swapDim" class="swap-dim hidden"></div>
+    <div id="swapBack" class="swap-back hidden">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+        <path d="M15 4 L7 12 L15 20" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div id="swapBanner" class="swap-banner hidden">
+      <div class="swap-banner-icon">
+        <svg viewBox="0 0 44 44" width="44" height="44">
+          <rect x="14" y="18" width="20" height="20" rx="4" fill="#37b94a"/>
+          <rect x="8" y="8" width="20" height="20" rx="4" fill="#f5a623"/>
+          <path d="M24 6 L30 10 L24 14" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <line x1="18" y1="10" x2="30" y2="10" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M20 30 L14 34 L20 38" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <line x1="14" y1="34" x2="26" y2="34" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="swap-banner-txt">
+        <div class="swap-banner-title">Swap</div>
+        <div class="swap-banner-sub">Select blocks to swap</div>
+      </div>
+    </div>
+    <div id="smashBanner" class="swap-banner hidden">
+      <div class="swap-banner-icon">
+        <svg viewBox="0 0 44 44" width="44" height="44">
+          <rect x="20" y="22" width="7" height="18" rx="3.5" fill="#c07820"/>
+          <rect x="10" y="10" width="24" height="14" rx="4" fill="#c03010"/>
+          <rect x="10" y="10" width="24" height="6" rx="4" fill="#e04020"/>
+          <rect x="10" y="10" width="8" height="14" rx="3" fill="#d03818"/>
+          <rect x="12" y="12" width="4" height="3" rx="1.5" fill="rgba(255,255,255,0.3)"/>
+        </svg>
+      </div>
+      <div class="swap-banner-txt">
+        <div class="swap-banner-title">Smash</div>
+        <div class="swap-banner-sub">Select block to remove</div>
+      </div>
+    </div>
+
     <div class="toolbar">
       <!-- Swap/Troca -->
       <div class="tool">
-        <div class="tbtn">
+        <div class="tbtn" id="swapBtn">
           <svg viewBox="0 0 44 44" width="32" height="32">
             <!-- two overlapping tiles -->
             <rect x="14" y="18" width="20" height="20" rx="4" fill="#37b94a"/>
@@ -3078,7 +3302,7 @@ body{
       </div>
       <!-- Hammer -->
       <div class="tool">
-        <div class="tbtn">
+        <div class="tbtn" id="hammerBtn">
           <svg viewBox="0 0 44 44" width="32" height="32">
             <!-- handle -->
             <rect x="20" y="22" width="7" height="18" rx="3.5" fill="#c07820" transform="rotate(0,23,31)"/>
@@ -3096,7 +3320,7 @@ body{
       </div>
       <!-- AD Free -->
       <div class="tool">
-        <div class="tbtn" style="position:relative;">
+        <div class="tbtn" id="adRewardBtn" style="position:relative;">
           <span class="free-badge">Free</span>
           <svg viewBox="0 0 42 42" width="30" height="30">
             <!-- film slate background -->
@@ -3622,6 +3846,13 @@ let uid = 1;
 let cell = 60;
 let score = 0;
 let gems = 94;
+// Persisted diamond balance — single source of truth synced everywhere
+try{ const g = localStorage.getItem("gems2248"); if(g !== null){ const n = parseInt(g,10); if(!isNaN(n) && n >= 0) gems = n; } }catch(e){}
+function updateGems(){
+  try{ localStorage.setItem("gems2248", String(gems)); }catch(e){}
+  document.querySelectorAll(".hud-gems b").forEach(el => el.textContent = gems);
+  const sg = document.getElementById("shopGemCount"); if(sg) sg.textContent = gems;
+}
 let level = 1;
 let highest = 2;
 // best block ever reached (shown on home). default 2 (level 1), updates as you play.
@@ -3991,6 +4222,7 @@ function fillBoardInitial(){
 
 function updateHUD(){
   $("#score").textContent = score;
+  updateGems();          // keep the diamond total in sync everywhere
 }
 function fmtGoal(v){
   if(v >= 1000000000) return Math.floor(v/1000000000) + "B";  // 1073741824 -> 1B
@@ -4472,11 +4704,181 @@ $("#luClaim").addEventListener("click",()=>{ const amt = LU_BASE_REWARD*luMult; 
 $("#luNo").addEventListener("click",()=>{ gems += LU_BASE_REWARD; gemBurst(LU_BASE_REWARD); updateHUD(); advancePhase(); });
 $("#luClose").addEventListener("click",()=>{ advancePhase(); });
 
+// ── SWAP booster ────────────────────────────────────────────────
+// Tap the toolbar swap button → board is highlighted over a dim layer,
+// pick two blocks and they trade places (costs SWAP_COST gems).
+// The "Swap / Select blocks to swap" banner is a one-time tutorial:
+// it only shows on the very first use, afterwards the mode starts
+// directly (flag persisted in localStorage).
+const SWAP_COST = 75;
+let swapMode = false, swapFirstTile = null;
+let swapTutSeen = false;
+try{ swapTutSeen = localStorage.getItem("swapTut2248") === "1"; }catch(e){}
+
+function enterSwapMode(){
+  swapMode = true; swapFirstTile = null;
+  playing = false;                       // block normal chain drags
+  gameScreen.classList.add("swap-mode");
+  $("#swapDim").classList.remove("hidden");
+  $("#swapBack").classList.remove("hidden");
+  if(!swapTutSeen){
+    $("#swapBanner").classList.remove("hidden");
+    swapTutSeen = true;
+    try{ localStorage.setItem("swapTut2248","1"); }catch(e){}
+  }
+}
+function exitSwapMode(){
+  swapMode = false;
+  if(swapFirstTile){ swapFirstTile.el.classList.remove("swap-sel"); swapFirstTile = null; }
+  gameScreen.classList.remove("swap-mode");
+  $("#swapDim").classList.add("hidden");
+  $("#swapBack").classList.add("hidden");
+  $("#swapBanner").classList.add("hidden");
+  playing = true;
+}
+function swapTap(obj){
+  if(!obj) return;
+  if(!swapFirstTile){
+    swapFirstTile = obj;
+    obj.el.classList.add("swap-sel");
+    linkSound(0);
+    return;
+  }
+  if(obj === swapFirstTile){            // tap again to unselect
+    obj.el.classList.remove("swap-sel");
+    swapFirstTile = null;
+    unlinkSound(0);
+    return;
+  }
+  // second block chosen → perform the swap
+  obj.el.classList.add("swap-sel");
+  linkSound(2);
+  const a = swapFirstTile, b = obj;
+  gems -= SWAP_COST;
+  busy = true;
+  // exchange grid entries + coordinates; place() glides them via the
+  // tiles' existing transform transition
+  const ar = a.row, ac = a.col;
+  a.row = b.row; a.col = b.col;
+  b.row = ar;    b.col = ac;
+  board[a.row][a.col] = a;
+  board[b.row][b.col] = b;
+  place(a); place(b);
+  mergeSound(2);
+  setTimeout(()=>{
+    a.el.classList.remove("swap-sel");
+    b.el.classList.remove("swap-sel");
+    swapFirstTile = null;
+    busy = false;
+    exitSwapMode();
+    updateHUD(); updateProgress(); saveState();
+  }, 240);
+}
+const _swapBtn = document.getElementById("swapBtn");
+if(_swapBtn) _swapBtn.addEventListener("click", ()=>{
+  if(swapMode){ exitSwapMode(); return; }
+  if(busy || !playing || tut.active || smashMode) return;
+  if(gems < SWAP_COST){
+    // can't afford — shake the button as feedback
+    _swapBtn.style.animation = "none"; void _swapBtn.offsetWidth;
+    _swapBtn.style.animation = "swapShake .35s ease";
+    unlinkSound(0);
+    return;
+  }
+  enterSwapMode();
+});
+const _swapBack = document.getElementById("swapBack");
+if(_swapBack) _swapBack.addEventListener("click", ()=>{
+  if(swapMode)  exitSwapMode();
+  if(smashMode) exitSmashMode();
+});
+
+// ── SMASH (hammer) booster ──────────────────────────────────────
+// Tap the hammer → dim layer + board highlight, pick ONE block and a
+// little hammer strikes it: the block shatters, gravity refills the
+// column. Costs SMASH_COST gems. The "Smash / Select block to remove"
+// banner is a one-time tutorial (flag persisted in localStorage).
+const SMASH_COST = 75;
+let smashMode = false;
+let smashTutSeen = false;
+try{ smashTutSeen = localStorage.getItem("smashTut2248") === "1"; }catch(e){}
+
+function enterSmashMode(){
+  smashMode = true;
+  playing = false;
+  gameScreen.classList.add("swap-mode");          // same board-above-dim styling
+  $("#swapDim").classList.remove("hidden");
+  $("#swapBack").classList.remove("hidden");
+  if(!smashTutSeen){
+    $("#smashBanner").classList.remove("hidden");
+    smashTutSeen = true;
+    try{ localStorage.setItem("smashTut2248","1"); }catch(e){}
+  }
+}
+function exitSmashMode(){
+  smashMode = false;
+  gameScreen.classList.remove("swap-mode");
+  $("#swapDim").classList.add("hidden");
+  $("#swapBack").classList.add("hidden");
+  $("#smashBanner").classList.add("hidden");
+  playing = true;
+}
+function smashTap(obj){
+  if(!obj || busy) return;
+  busy = true;
+  gems -= SMASH_COST;
+  // little hammer swings onto the tile
+  const hammer = document.createElement("div");
+  hammer.className = "smash-hammer";
+  hammer.innerHTML = '<svg viewBox="0 0 44 44" width="100%" height="100%">'
+    + '<rect x="20" y="22" width="7" height="18" rx="3.5" fill="#c07820"/>'
+    + '<rect x="10" y="10" width="24" height="14" rx="4" fill="#c03010"/>'
+    + '<rect x="10" y="10" width="24" height="6" rx="4" fill="#e04020"/>'
+    + '<rect x="10" y="10" width="8" height="14" rx="3" fill="#d03818"/>'
+    + '</svg>';
+  obj.el.appendChild(hammer);
+  obj.el.classList.add("smash-hit");
+  // impact: low thud + crack sparkle
+  pluck(110, 0.16, 0.26, "square", 0.24);
+  pluck(SFX_BASE * 2, 0.08, 0.10, "triangle", 0.26);
+  vibrate(50);
+  setTimeout(()=>{
+    // shatter the block (scale-down vanish in place)
+    board[obj.row][obj.col] = null;
+    obj.el.style.setProperty("--tx","0px");
+    obj.el.style.setProperty("--ty","0px");
+    obj.el.classList.add("vanish");
+    setTimeout(()=>{ obj.el.remove(); delete elById[obj.id]; }, 150);
+    setTimeout(()=>{
+      gravity();                 // tiles above fall, new ones spawn
+      refreshCrowns();
+      busy = false;
+      exitSmashMode();
+      updateHUD(); updateProgress(); saveState();
+    }, 170);
+  }, 380);
+}
+const _hammerBtn = document.getElementById("hammerBtn");
+if(_hammerBtn) _hammerBtn.addEventListener("click", ()=>{
+  if(smashMode){ exitSmashMode(); return; }
+  if(busy || !playing || tut.active || swapMode) return;
+  if(gems < SMASH_COST){
+    _hammerBtn.style.animation = "none"; void _hammerBtn.offsetWidth;
+    _hammerBtn.style.animation = "swapShake .35s ease";
+    unlinkSound(0);
+    return;
+  }
+  enterSmashMode();
+});
+
 // Pointer events
 function getPoint(e){ const t=e.touches?e.touches[0]:e; return {x:t.clientX,y:t.clientY}; }
 boardEl.addEventListener("pointerdown", e=>{
   e.preventDefault();
-  const p=getPoint(e); startDrag(cellFromPoint(p.x,p.y));
+  const p=getPoint(e);
+  if(smashMode){ smashTap(cellFromPoint(p.x,p.y)); return; }
+  if(swapMode){ swapTap(cellFromPoint(p.x,p.y)); return; }
+  startDrag(cellFromPoint(p.x,p.y));
 });
 boardEl.addEventListener("pointermove", e=>{
   if(!dragging) return; e.preventDefault();
@@ -4597,6 +4999,114 @@ document.getElementById("shopModal").addEventListener("click", function(e){
   if(e.target === this) closeShop();
 });
 
+// ════════════════════════════════════════════════════════════════
+//  REWARDED ADS (SIMULATED) + SHOP PURCHASES
+//
+//  showRewardedAd() is the SINGLE integration point: when the CiDi
+//  SDK is added, replace only the body of this function with the real
+//  rewarded-ad call and fire onReward after the SDK confirms the view.
+// ════════════════════════════════════════════════════════════════
+let adShowing = false;
+function showRewardedAd(onReward){
+  if(adShowing) return;
+  adShowing = true;
+  const wasPlaying = playing; playing = false;   // freeze gameplay behind the ad
+  const ov = document.getElementById("adOverlay");
+  const tm = document.getElementById("adSimTimer");
+  const cl = document.getElementById("adSimClaim");
+  ov.classList.remove("hidden");
+  cl.classList.add("hidden");
+  let left = 5;
+  tm.style.display = ""; tm.textContent = left;
+  const iv = setInterval(()=>{
+    left--;
+    if(left > 0){ tm.textContent = left; return; }
+    clearInterval(iv);
+    tm.style.display = "none";
+    cl.classList.remove("hidden");
+    goalSound();                                  // "reward ready" chime
+  }, 1000);
+  cl.onclick = ()=>{
+    ov.classList.add("hidden");
+    adShowing = false;
+    playing = wasPlaying;
+    if(typeof onReward === "function") onReward();
+  };
+}
+
+// ── Shop: gem packs bought by watching N (simulated) ads ───────
+// Progress per pack is persisted, e.g. "4 ADs" → "3 ADs" → ... → gems!
+let shopAdProg = {};
+try{ shopAdProg = JSON.parse(localStorage.getItem("shopAdProg2248") || "{}") || {}; }catch(e){ shopAdProg = {}; }
+function saveShopProg(){ try{ localStorage.setItem("shopAdProg2248", JSON.stringify(shopAdProg)); }catch(e){} }
+let adFree = false;
+try{ adFree = localStorage.getItem("adFree2248") === "1"; }catch(e){}
+
+function packLabel(btn, need, done){
+  const left = Math.max(1, need - done);
+  btn.textContent = left + (left === 1 ? " AD" : " ADs");
+}
+document.querySelectorAll(".shop-pack").forEach(btn => {
+  const key  = "pack" + btn.dataset.gems;
+  const need = parseInt(btn.dataset.ads, 10);
+  packLabel(btn, need, shopAdProg[key] || 0);
+  btn.addEventListener("click", () => {
+    showRewardedAd(() => {
+      shopAdProg[key] = (shopAdProg[key] || 0) + 1;
+      if(shopAdProg[key] >= need){
+        shopAdProg[key] = 0;
+        gems += parseInt(btn.dataset.gems, 10);
+        gemBurst(6);
+        updateGems();
+      }
+      packLabel(btn, need, shopAdProg[key]);
+      saveShopProg();
+    });
+  });
+});
+
+// Watch Ad — 20 gems per ad, repeatable
+const _watchAd = document.getElementById("shopWatchAd");
+if(_watchAd) _watchAd.addEventListener("click", () => {
+  showRewardedAd(() => { gems += 20; gemBurst(4); updateGems(); });
+});
+
+// Remove Ads — 15 ads, then owned forever (flag ready for CiDi)
+const _rmAds = document.getElementById("shopRemoveAds");
+function refreshRemoveAds(){
+  if(!_rmAds) return;
+  if(adFree){
+    _rmAds.textContent = "OWNED";
+    _rmAds.style.opacity = "0.6";
+    _rmAds.style.pointerEvents = "none";
+  } else {
+    packLabel(_rmAds, 15, shopAdProg.removeAds || 0);
+  }
+}
+if(_rmAds) _rmAds.addEventListener("click", () => {
+  if(adFree) return;
+  showRewardedAd(() => {
+    shopAdProg.removeAds = (shopAdProg.removeAds || 0) + 1;
+    if(shopAdProg.removeAds >= 15){
+      adFree = true;
+      try{ localStorage.setItem("adFree2248", "1"); }catch(e){}
+      winSound();
+    }
+    saveShopProg(); refreshRemoveAds();
+  });
+});
+refreshRemoveAds();
+
+// Gameplay toolbar "AD Free +20" button — same simulated ad
+const _adRewardBtn = document.getElementById("adRewardBtn");
+if(_adRewardBtn) _adRewardBtn.addEventListener("click", () => {
+  if(busy || swapMode) return;
+  showRewardedAd(() => { gems += 20; gemBurst(4); updateGems(); });
+});
+
+// Sync all gem displays on boot
+updateGems();
+
 // ── Rewards ───────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 //  DAILY REWARDS SYSTEM
@@ -4705,8 +5215,7 @@ function drCollect() {
   // Award gems & refresh HUD
   gems += totalGems;
   gemBurst(Math.min(totalGems, 8));
-  const gemEl = document.querySelector('.hud-gems b');
-  if (gemEl) gemEl.textContent = gems;
+  updateGems();
 
   return { dayGems, bonusGems, totalGems, newStreak, milestone };
 }
@@ -5618,6 +6127,8 @@ function executeFullReset(){
   highest          = 2;          // progress bar: no player merges yet
   bestBlock        = 2;          // home screen card: resets to "2"
   gems             = 94;         // restore starter gem count
+  shopAdProg       = {};         // shop ad-pack progress
+  adFree           = false;      // remove-ads ownership
   journeyCompleted = 0;          // lock all levels except phase 1
   booted           = false;      // force a clean boot on next PLAY
   playing          = false;
@@ -5638,6 +6149,10 @@ function executeFullReset(){
   try{
     localStorage.removeItem("save2248");  // wipes level, board, score
     localStorage.removeItem("best2248"); // wipes home "highest block"
+    localStorage.removeItem("gems2248");        // diamond balance
+    localStorage.removeItem("shopAdProg2248");  // shop ad progress
+    localStorage.removeItem("adFree2248");      // remove-ads ownership
+    localStorage.removeItem("swapTut2248");     // swap one-time tutorial
   }catch(e){}
 
   // ── 5. Force a clean boot next time PLAY is pressed ──────────
@@ -5666,6 +6181,8 @@ function executeFullReset(){
   homeScreen.style.display  = "flex";
 
   // ── 8. Refresh all HUD elements ──────────────────────────────
+  updateGems();          // resync diamond displays with the reset balance
+  refreshRemoveAds();    // shop "Remove Ads" button back to 15 ADs
   // updateHUD()  → score counter in the game screen
   // updateHome() → home shield card (shows bestBlock = 2)
   updateHUD();
