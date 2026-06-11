@@ -752,6 +752,36 @@ body{
   #rotateOverlay{ display:flex; }
 }
 
+/* ── Gem reward splash (shown after the LAST ad of a shop pack) ── */
+#gemSplash{
+  position:fixed;inset:0;z-index:1000;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(2,4,18,0.55);
+  pointer-events:none;
+}
+#gemSplash.show{display:flex;}
+.gem-splash-card{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  animation:gemSplashIn .45s cubic-bezier(.2,1.5,.4,1);
+}
+.gem-splash-amt{
+  font-size:46px;font-weight:900;color:#ffd23d;
+  text-shadow:0 3px 10px rgba(0,0,0,.65), 0 0 24px rgba(255,210,60,.35);
+}
+.gem-splash-sub{
+  font-size:15px;font-weight:800;color:#fff;letter-spacing:2px;opacity:.9;
+}
+@keyframes gemSplashIn{
+  from{transform:scale(.35);opacity:0;}
+  60% {transform:scale(1.08);}
+  to  {transform:scale(1);opacity:1;}
+}
+/* shop pack with ads already watched: golden progress accent */
+.shop-pack.in-progress{
+  background:linear-gradient(180deg,#f0b428,#d08010) !important;
+  box-shadow:0 3px 0 #8a4a00 !important;
+}
+
 /* ── Select Avatar modal ── */
 #avModal{
   position:fixed;inset:0;z-index:120;
@@ -2884,6 +2914,25 @@ body{
     <div>Gire o dispositivo<br><small>2248 Nexum foi feito para o modo retrato</small></div>
   </div>
 
+  <!-- Gem reward splash (pack completed) -->
+  <div id="gemSplash">
+    <div class="gem-splash-card">
+      <svg viewBox="0 0 40 44" width="96" height="100" style="filter:drop-shadow(0 6px 14px rgba(150,0,255,.55));">
+        <path d="M9 9 H31 L38 17 L20 42 L2 17 Z" fill="#2a004a"/>
+        <polygon points="2,17 38,17 20,42" fill="#b32fe0"/>
+        <polygon points="2,17 20,17 20,42" fill="#d34bff"/>
+        <polygon points="38,17 20,17 20,42" fill="#8010b0"/>
+        <polygon points="9,9 2,17 13,17" fill="#9a20c0"/>
+        <polygon points="31,9 38,17 27,17" fill="#9a20c0"/>
+        <polygon points="9,9 31,9 27,17 13,17" fill="#f0aaff"/>
+        <polygon points="11,10.5 18,10.5 15.5,15 12.5,15" fill="#fff" opacity=".6"/>
+        <path d="M9 9 H31 L38 17 L20 42 L2 17 Z" fill="none" stroke="#1a0030" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+      <div class="gem-splash-amt" id="gemSplashAmt">+300</div>
+      <div class="gem-splash-sub">DIAMONDS EARNED!</div>
+    </div>
+  </div>
+
   <!-- ── SELECT AVATAR + NICKNAME (feeds the live ranking) ── -->
   <div id="avModal">
     <div class="av-card">
@@ -3142,7 +3191,7 @@ body{
                 <rect x="9" y="16" width="6" height="4" fill="#f5c030"/>
                 <rect x="6" y="20" width="12" height="2.5" rx="1" fill="#f5c030"/>
               </svg>
-              6,726
+              <span id="profBestScore">0</span>
             </div>
           </div>
           <!-- Highest Block -->
@@ -3166,15 +3215,15 @@ body{
                 <ellipse cx="12" cy="12" rx="5" ry="9" stroke="#60a0e0" stroke-width="1.5"/>
                 <line x1="3" y1="12" x2="21" y2="12" stroke="#60a0e0" stroke-width="1.5"/>
               </svg>
-              1,343,432
+              <span id="profGlobalRank">—</span>
             </div>
           </div>
           <!-- Country Rank -->
           <div class="prof-stat-card">
             <div class="prof-stat-label">Country Rank</div>
             <div class="prof-stat-value">
-              <span style="font-size:16px;">🇧🇷</span>
-              41,265
+              <span style="font-size:16px;" id="profCountryFlag">🌐</span>
+              <span id="profCountryRank">—</span>
             </div>
           </div>
         </div>
@@ -4720,7 +4769,10 @@ function endDrag(){
 
 function resolveMerge(used, res){
   busy = true;
-  phaseMoves++;                       // Double Up trigger counter
+  // Double Up trigger trackers: the phase clock starts on the FIRST
+  // move (idling on home/journey/shop must not count toward the 90s)
+  if(phaseMoves === 0) phaseStartMs = Date.now();
+  phaseMoves++;
   // Stronger vibration on merge — scales with chain length
   vibrate(Math.min(12 + used.length * 6, 60));
   mergeSound(used.length);
@@ -4834,7 +4886,42 @@ function cullBelowFloor(animatePop){
   }
 }
 
+// ── Batch-aware spawning (difficulty guard) ─────────────────────
+// Big combos refill many cells at once. If those spawns repeat values
+// freely, the player gets gift-wrapped chains and difficulty collapses.
+// Rule (from LEVEL 4 onward — levels 1-3 stay fully random as a soft
+// onboarding):
+//   • refills of up to 5 tiles → ALL values distinct
+//   • from the 6th tile of a refill on → repeats allowed, but at most
+//     ONE PAIR per value (e.g. 6 tiles = 5 distinct + 1 repeat), with
+//     the cap relaxing only if the spawn-pool window runs out.
+let spawnBatch = null;          // value → count, while a refill batch runs
+function randSpawnBatched(){
+  if(level <= 3 || !spawnBatch) return randSpawn();
+  const pool = getSpawnPool();
+  const total = Object.values(spawnBatch).reduce((a, b) => a + b, 0);
+  let cap = total >= 5 ? 2 : 1;       // distinct for the first 5, pairs after
+  for(let relax = 0; relax < 4; relax++){
+    const candidates = pool.filter(([v]) => (spawnBatch[v] || 0) < cap);
+    if(candidates.length){
+      let totW = 0;
+      for(const [, w] of candidates) totW += w;
+      let r = Math.random() * totW;
+      for(const [v, w] of candidates){
+        r -= w;
+        if(r <= 0){ spawnBatch[v] = (spawnBatch[v] || 0) + 1; return v; }
+      }
+      const v = candidates[candidates.length - 1][0];
+      spawnBatch[v] = (spawnBatch[v] || 0) + 1;
+      return v;
+    }
+    cap++;                            // pool exhausted at this cap — relax
+  }
+  return randSpawn();                 // safety net (never reached in practice)
+}
+
 function gravity(){
+  spawnBatch = {};                    // one batch = one full refill pass
   for(let c=0;c<COLS;c++){
     let write = ROWS-1;
     for(let r=ROWS-1;r>=0;r--){
@@ -4846,11 +4933,12 @@ function gravity(){
     }
     let newCount = write+1;
     for(let r=write;r>=0;r--){
-      const v=randSpawn();
+      const v=randSpawnBatched();
       const obj=makeTile(v,c,r, r-newCount);
       board[r][c]=obj;
     }
   }
+  spawnBatch = null;
 }
 
 function floatScore(obj,text){
@@ -4952,7 +5040,19 @@ function advancePhase(){
   showStartOverlay();   // GOAL / Tap to Start before the next phase
   saveState();
 }
-$("#luClaim").addEventListener("click",()=>{ const amt = LU_BASE_REWARD*luMult; gems += amt; gemBurst(amt); updateHUD(); advancePhase(); });
+$("#luClaim").addEventListener("click",()=>{
+  // The multiplied reward is EARNED BY WATCHING AN AD (original's rule):
+  // lock the multiplier at click time (the arrow keeps sweeping), play
+  // the rewarded ad (real CiDi in-platform / simulated in dev), and only
+  // grant + advance when the ad actually rewards. On failure the player
+  // stays on the modal — can retry or take "No Thanks".
+  const mult = luMult;
+  showRewardedAd(()=>{
+    const amt = LU_BASE_REWARD * mult;
+    gems += amt; gemBurst(amt); updateHUD();
+    advancePhase();
+  });
+});
 $("#luNo").addEventListener("click",()=>{ gems += LU_BASE_REWARD; gemBurst(LU_BASE_REWARD); updateHUD(); advancePhase(); });
 $("#luClose").addEventListener("click",()=>{ advancePhase(); });
 
@@ -5123,7 +5223,11 @@ let duTarget = null;
 
 function maybeOfferDoubleUp(){
   if(duShownThisPhase || busy || !playing || tut.active || swapMode || smashMode) return;
-  if(phaseMoves < DU_MOVES && (Date.now() - phaseStartMs) < DU_TIME_MS) return;
+  // Trigger gates: 25 moves OR 90s of ACTIVE play (clock anchored at the
+  // phase's first move + a minimum of 8 moves so pausing/backgrounding
+  // mid-phase can't fire the offer right after a single merge).
+  const longPlay = phaseMoves >= 8 && (Date.now() - phaseStartMs) >= DU_TIME_MS;
+  if(phaseMoves < DU_MOVES && !longPlay) return;
   // find the two biggest tiles on the board
   const tiles = [];
   for(let r = 0; r < ROWS; r++) for(let c = 0; c < COLS; c++){
@@ -5415,6 +5519,12 @@ let adShowing = false;
 // fails (no tempToken outside the platform).
 //   • CiDiSDK        → CiDiSDK.init() (storage on Pi iOS) + showRewardedAd()
 //   • CidiProxySDK   → auth.login() + report.{gameTask,tournamentScore,medal}
+// Build tag — bump on every deploy; check it in the console (or via
+// javascript:alert(BUILD) in the address bar) to confirm which build
+// is live and rule out stale-deploy confusion.
+const BUILD = "2026-06-11.3";
+console.log("[2248 Nexum] build", BUILD);
+
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
 const CIDI = { client:null, ready:false, storageReady:false, medalOwned:false };
 const CIDI_MEDAL_LEVEL = 50;   // medal condition: "Reach Level 50"
@@ -5463,6 +5573,25 @@ function reloadPersistedState(){
   try{ const t = parseInt(localStorage.getItem("theme2248")||"0",10);
        if(!isNaN(t)) themeIdx = ((t % THEMES.length)+THEMES.length)%THEMES.length; }catch(e){}
   try{ shopAdProg = JSON.parse(localStorage.getItem("shopAdProg2248")||"{}")||{}; }catch(e){}
+  // ── Identity recovery (critical on Pi Browser iOS) ─────────────
+  // pid/nick/avatar were read at parse time, BEFORE storage became
+  // available. Now that it works: adopt the stored identity if one
+  // exists, otherwise persist the freshly generated one — so the
+  // player keeps the same ranking entry, name and avatar forever.
+  try{
+    const sp = localStorage.getItem("pid2248");
+    if(sp) playerId = sp; else localStorage.setItem("pid2248", playerId);
+  }catch(e){}
+  try{
+    const sn = localStorage.getItem("nick2248");
+    if(sn) playerNick = sn; else localStorage.setItem("nick2248", playerNick);
+  }catch(e){}
+  try{
+    const sa = localStorage.getItem("avatar2248");
+    if(sa !== null && !isNaN(parseInt(sa,10))) myAvatar = parseInt(sa,10);
+    else localStorage.setItem("avatar2248", String(myAvatar));
+  }catch(e){}
+  if(typeof refreshIdentityUI === "function") refreshIdentityUI();
   if(typeof updateGems  === "function") updateGems();
   if(typeof updateHome  === "function") updateHome();
   if(typeof applyTheme  === "function") applyTheme();
@@ -5576,9 +5705,33 @@ let shopAdProg = {};
 try{ shopAdProg = JSON.parse(localStorage.getItem("shopAdProg2248") || "{}") || {}; }catch(e){ shopAdProg = {}; }
 function saveShopProg(){ try{ localStorage.setItem("shopAdProg2248", JSON.stringify(shopAdProg)); }catch(e){} }
 function packLabel(btn, need, done){
-  const left = Math.max(1, need - done);
-  btn.textContent = left + (left === 1 ? " AD" : " ADs");
+  // Progress is EXPLICIT: untouched packs invite ("5 ADs"); once the
+  // player starts, the button counts up "1/5 ADs", "2/5 ADs"… and the
+  // pack turns gold so a resumable purchase is impossible to miss.
+  if(done > 0){
+    btn.textContent = done + "/" + need + " ADs";
+    btn.classList.add("in-progress");
+  } else {
+    btn.textContent = need + (need === 1 ? " AD" : " ADs");
+    btn.classList.remove("in-progress");
+  }
 }
+// Reward celebration: big faceted gem + amount, auto-dismisses.
+let gemSplashTimer = null;
+function gemRewardSplash(amount){
+  const ov = document.getElementById("gemSplash");
+  const amt = document.getElementById("gemSplashAmt");
+  if(!ov || !amt) return;
+  amt.textContent = "+" + Number(amount).toLocaleString("pt-BR");
+  ov.classList.remove("show"); void ov.offsetWidth;   // restart animation
+  ov.classList.add("show");
+  gemBurst(10);
+  winSound();
+  vibrate(60);
+  if(gemSplashTimer) clearTimeout(gemSplashTimer);
+  gemSplashTimer = setTimeout(()=>{ ov.classList.remove("show"); }, 1900);
+}
+
 document.querySelectorAll(".shop-pack").forEach(btn => {
   const key  = "pack" + btn.dataset.gems;
   const need = parseInt(btn.dataset.ads, 10);
@@ -5588,9 +5741,10 @@ document.querySelectorAll(".shop-pack").forEach(btn => {
       shopAdProg[key] = (shopAdProg[key] || 0) + 1;
       if(shopAdProg[key] >= need){
         shopAdProg[key] = 0;
-        gems += parseInt(btn.dataset.gems, 10);
-        gemBurst(6);
+        const amount = parseInt(btn.dataset.gems, 10);
+        gems += amount;
         updateGems();
+        gemRewardSplash(amount);          // big on-screen "+N DIAMONDS"
       }
       packLabel(btn, need, shopAdProg[key]);
       saveShopProg();
@@ -5897,10 +6051,33 @@ function updateProfile(){
     });
   }
 }
+// Live ranks for the profile stat cards (both reads hit the 30s edge
+// cache, so opening the profile costs ~nothing on Upstash).
+async function fetchProfileRanks(){
+  const g = document.getElementById("profGlobalRank");
+  const c = document.getElementById("profCountryRank");
+  const f = document.getElementById("profCountryFlag");
+  if(!g || !c) return;
+  if(!/^https?:$/.test(location.protocol)){ g.textContent = "—"; c.textContent = "—"; return; }
+  g.textContent = "…"; c.textContent = "…";
+  try{
+    const [gd, cd] = await Promise.all([ lbFetch("global"), lbFetch("country") ]);
+    g.textContent = (gd.me && gd.me.rank) ? "#" + Number(gd.me.rank).toLocaleString("pt-BR") : "—";
+    c.textContent = (cd.me && cd.me.rank) ? "#" + Number(cd.me.rank).toLocaleString("pt-BR") : "—";
+    if(f && cd.country) f.textContent = flagEmoji(cd.country);
+  }catch(e){
+    g.textContent = "—"; c.textContent = "—";
+  }
+}
+
 function openProfile(){
   closeAllModals();
   setActiveNav("profileNavBtn", true);
   updateProfile();
+  refreshIdentityUI();                 // avatar + nick + flag on the user card
+  fetchProfileRanks();                 // real Global/Country Rank (async)
+  const bs = document.getElementById("profBestScore");
+  if(bs) bs.textContent = formatScore(score);   // real cumulative score
   document.getElementById("profileModal").classList.add("open");
 }
 function closeProfile(){
