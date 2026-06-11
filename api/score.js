@@ -21,6 +21,11 @@ export default async function handler(req, res){
   const country = String(req.headers['x-vercel-ip-country'] || 'XX')
     .toUpperCase().slice(0, 2);
 
+  // avatar escolhido (índice 0-39; default 0)
+  let av = Number(req.body && req.body.av);
+  if(!Number.isFinite(av) || av < 0 || av > 39) av = 0;
+  av = Math.floor(av);
+
   // ── rate limit leve: 12 submits/min por jogador ──
   const rlKey = `rl:${id}`;
   const hits = await redis.incr(rlKey);
@@ -29,7 +34,7 @@ export default async function handler(req, res){
 
   // ── grava: perfil + rankings (GT = só melhora, nunca piora) ──
   await Promise.all([
-    redis.set(`p:${id}`, JSON.stringify({ n: cleanNick, c: country }),
+    redis.set(`p:${id}`, JSON.stringify({ n: cleanNick, c: country, a: av }),
               { ex: 60 * 60 * 24 * 180 }),           // perfil expira em 180d sem jogar
     redis.zadd('lb:global',       { gt: true }, { score: s, member: id }),
     redis.zadd(`lb:c:${country}`, { gt: true }, { score: s, member: id }),
