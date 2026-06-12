@@ -4925,15 +4925,20 @@ function resolveMerge(used, res){
   // last successfully COMPLETED phase, never from a run in progress.
   floatScore(head, "+"+res.result);
   updateHUD(); updateProgress();
+  // Original-style pacing: after the merge pop, the HOLES stay visible
+  // for a beat (the +N floats over them), THEN gravity drops the column
+  // with distance-proportional speed and the refill cascades in.
   setTimeout(()=>{
-    gravity();
+    const fallMs = gravity();
     refreshCrowns();
     saveState();
-    ensureMovesAvailable();          // deadlock check after every settle
-    busy=false;
-    if(res.result>=GOAL) win();
-    else maybeOfferDoubleUp();
-  }, 150);
+    setTimeout(()=>{
+      ensureMovesAvailable();        // deadlock check after every settle
+      busy=false;
+      if(res.result>=GOAL) win();
+      else maybeOfferDoubleUp();
+    }, fallMs + 40);
+  }, 420);
 }
 
 // ── Deadlock protection ─────────────────────────────────────────
@@ -5048,14 +5053,36 @@ function randSpawnBatched(){
   return randSpawn();                 // safety net (never reached in practice)
 }
 
+// Tile fall pacing (original-style): travel time grows with distance,
+// with a gravity-like accelerating ease; refills cascade row by row so
+// the feed is readable instead of teleport-fast.
+function fallAnim(el, distRows, delayMs){
+  const dur = Math.min(100 + distRows * 65, 500);
+  el.style.transitionDuration = dur + "ms";
+  el.style.transitionTimingFunction = "cubic-bezier(.5,.05,.7,.5)";
+  if(delayMs) el.style.transitionDelay = delayMs + "ms";
+  setTimeout(()=>{
+    el.style.transitionDuration = "";
+    el.style.transitionTimingFunction = "";
+    el.style.transitionDelay = "";
+  }, dur + (delayMs||0) + 60);
+  return dur + (delayMs||0);
+}
+
 function gravity(){
   spawnBatch = {};                    // one batch = one full refill pass
+  let settleMs = 0;
   for(let c=0;c<COLS;c++){
     let write = ROWS-1;
     for(let r=ROWS-1;r>=0;r--){
       if(board[r][c]){
         const obj=board[r][c];
-        if(r!==write){ board[r][c]=null; board[write][c]=obj; obj.row=write; place(obj); }
+        if(r!==write){
+          const dist = write - r;
+          board[r][c]=null; board[write][c]=obj; obj.row=write;
+          settleMs = Math.max(settleMs, fallAnim(obj.el, dist, 0));
+          place(obj);
+        }
         write--;
       }
     }
@@ -5064,9 +5091,14 @@ function gravity(){
       const v=randSpawnBatched();
       const obj=makeTile(v,c,r, r-newCount);
       board[r][c]=obj;
+      // cascade: the lowest new tile lands first, the ones above feed in
+      const stagger = (write - r) * 60;
+      settleMs = Math.max(settleMs, fallAnim(obj.el, newCount, stagger));
+      place(obj);                     // re-place with the tuned transition
     }
   }
   spawnBatch = null;
+  return settleMs;
 }
 
 function floatScore(obj,text){
@@ -5721,7 +5753,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-11.10";
+const BUILD = "2026-06-11.11";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
