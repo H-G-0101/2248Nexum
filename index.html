@@ -106,7 +106,8 @@ body{
   display:flex;align-items:center;gap:6px;
   background:linear-gradient(180deg,#2a3280,#1b2060);
   border:1.5px solid #3a4090;
-  border-radius:22px;padding:7px 9px 7px 38px;
+  border-radius:20px;padding:0 9px 0 38px;
+  height:40px;box-sizing:border-box;   /* locked: twin of .hud-crown */
   box-shadow:0 2px 0 #080c28, 0 0 0 0.5px #4a50a0;
   position:relative;   /* anchor for the oversized gem */
 }
@@ -134,7 +135,8 @@ body{
   display:flex;align-items:center;gap:7px;
   background:linear-gradient(180deg,#2a3280,#1b2060);
   border:1.5px solid #3a4090;
-  border-radius:22px;padding:7px 16px 7px 50px;
+  border-radius:20px;padding:0 16px 0 50px;
+  height:40px;box-sizing:border-box;   /* locked: twin of .hud-gems */
   font-weight:800;font-size:18px;line-height:1;
   box-shadow:0 2px 0 #080c28, 0 0 0 0.5px #4a50a0;
   position:relative;
@@ -143,7 +145,7 @@ body{
   width:40px;height:34px;flex:none;
   position:absolute;left:5px;top:50%;
   /* crown artwork centre ≈47.5% of its viewBox — nudge to optical centre */
-  transform:translateY(-49%);
+  transform:translateY(-48%);
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));
 }
 
@@ -2584,19 +2586,26 @@ body{
         <svg class="crown-ico" viewBox="0 0 48 40">
           <defs>
             <linearGradient id="hudCrownG" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#ffc24a"/>
-              <stop offset="55%" stop-color="#f5921e"/>
-              <stop offset="100%" stop-color="#e07010"/>
+              <stop offset="0%" stop-color="#ffc94f"/>
+              <stop offset="55%" stop-color="#f29a1f"/>
+              <stop offset="100%" stop-color="#e07b10"/>
+            </linearGradient>
+            <linearGradient id="hudCrownBand" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#d8860f"/>
+              <stop offset="100%" stop-color="#c06f08"/>
             </linearGradient>
           </defs>
-          <path d="M5 33 L9 10 L18 20 L24 5 L30 20 L39 10 L43 33 Z"
-                fill="url(#hudCrownG)" stroke="#a85408" stroke-width="2" stroke-linejoin="round"/>
-          <polygon points="24,5 30,20 39,10 43,33 24,33" fill="rgba(150,60,0,0.22)"/>
-          <polygon points="24,14 29.5,23 24,32 18.5,23" fill="#8a18b8"/>
-          <polygon points="24,14 24,32 18.5,23" fill="#c044e8"/>
-          <polygon points="24,14 29.5,23 24,23" fill="#a82cd0"/>
-          <path d="M24 14 L29.5 23 L24 32 L18.5 23 Z" fill="none" stroke="#4a0070" stroke-width="1.5" stroke-linejoin="round"/>
-          <polygon points="22.5,16.5 24,15 25,17.5 23,18.5" fill="#fff" opacity="0.55"/>
+          <path d="M7.5 31 L10.5 10 L17.5 17.5 L24 5.5 L30.5 17.5 L37.5 10 L40.5 31 Z"
+                fill="url(#hudCrownG)" stroke="#b05c08" stroke-width="1.8" stroke-linejoin="round"/>
+          <circle cx="10" cy="9" r="2.6" fill="#ffd86a" stroke="#b05c08" stroke-width="1.4"/>
+          <circle cx="24" cy="5" r="2.8" fill="#ffd86a" stroke="#b05c08" stroke-width="1.4"/>
+          <circle cx="38" cy="9" r="2.6" fill="#ffd86a" stroke="#b05c08" stroke-width="1.4"/>
+          <rect x="6.5" y="28" width="35" height="6.5" rx="3.2" fill="url(#hudCrownBand)" stroke="#b05c08" stroke-width="1.4"/>
+          <polygon points="24,16 28.2,22 24,28 19.8,22" fill="#8a18b8"/>
+          <polygon points="24,16 24,28 19.8,22" fill="#c044e8"/>
+          <polygon points="24,16 28.2,22 24,22" fill="#a82cd0"/>
+          <path d="M24 16 L28.2 22 L24 28 L19.8 22 Z" fill="none" stroke="#5a0888" stroke-width="1.3" stroke-linejoin="round"/>
+          <polygon points="23,17.8 24,16.8 24.8,18.6 23.4,19.2" fill="#fff" opacity="0.6"/>
         </svg>
         <span id="hudRank">—</span>
       </div>
@@ -5753,12 +5762,12 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-11.11";
+const BUILD = "2026-06-11.14";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
 const CIDI = { client:null, ready:false, storageReady:false, medalOwned:false };
-const CIDI_MEDAL_LEVEL = 50;   // medal condition: "Reach Level 50"
+const CIDI_MEDAL_LEVEL = 80;   // medal condition: "Reach Level 80" (set in the CiDi panel)
 
 async function cidiInit(){
   // 1) Storage bootstrap — on Pi Browser iOS, localStorage only works
@@ -5784,7 +5793,17 @@ async function cidiInit(){
       try{
         const r = await CIDI.client.report.medalOwnership();
         CIDI.medalOwned = !!(r && r.owned);
+        if(CIDI.medalOwned){
+          try{
+            localStorage.setItem("cidiMedal2248","1");
+            localStorage.removeItem("cidiMedalPend2248");
+          }catch(e){}
+        }
       }catch(e){}
+      // RECOVERY PATH: if a medal claim is pending from a previous
+      // session (report lost mid-flight, login was down at win time…),
+      // re-submit it now — every session, until confirmed.
+      cidiFlushMedal();
     }
   }catch(e){
     // TEMP_TOKEN_NOT_FOUND etc. = running outside the platform — fine.
@@ -5855,15 +5874,49 @@ function cidiReportScore(){
   }).then(()=> console.log("[CiDi] score reported:", score))
     .catch(e => console.warn("[CiDi] score:", e && e.code));
 }
-function cidiMaybeClaimMedal(){
-  // Medal: "Reach Level 50"
-  if(!CIDI.ready || CIDI.medalOwned || level < CIDI_MEDAL_LEVEL) return;
+// ── Medal reporting: PENDING-CLAIM pattern ──────────────────────
+// Lesson from production: if the report is attempted only at the win
+// moment and that single shot fails (login not ready, network blip,
+// app killed), the player stays eligible forever but unbadged.
+// Fix: ELIGIBILITY is persisted the instant it happens, and a flusher
+// with retry/backoff re-submits on every login until the platform
+// CONFIRMS — so a lost report self-heals on the next session.
+let cidiMedalAttempts = 0;
+function cidiMedalMarkPending(){
+  try{
+    if(localStorage.getItem("cidiMedal2248") !== "1")
+      localStorage.setItem("cidiMedalPend2248", "1");
+  }catch(e){}
+}
+function cidiFlushMedal(){
+  if(CIDI.medalOwned){
+    try{ localStorage.removeItem("cidiMedalPend2248"); }catch(e){}
+    return;
+  }
   try{ if(localStorage.getItem("cidiMedal2248") === "1"){ CIDI.medalOwned = true; return; } }catch(e){}
+  let pending = false;
+  try{ pending = localStorage.getItem("cidiMedalPend2248") === "1"; }catch(e){}
+  if(!pending && level >= CIDI_MEDAL_LEVEL){ pending = true; cidiMedalMarkPending(); }
+  if(!pending || !CIDI.ready) return;
+  if(cidiMedalAttempts >= 6) return;            // per-session cap
+  cidiMedalAttempts++;
   CIDI.client.report.medal().then(()=>{
     CIDI.medalOwned = true;
-    try{ localStorage.setItem("cidiMedal2248","1"); }catch(e){}
-    console.log("[CiDi] medal claimed");
-  }).catch(e => console.warn("[CiDi] medal:", e && e.code));
+    try{
+      localStorage.setItem("cidiMedal2248","1");
+      localStorage.removeItem("cidiMedalPend2248");
+    }catch(e){}
+    console.log("[CiDi] medal claimed (attempt " + cidiMedalAttempts + ")");
+  }).catch(e => {
+    console.warn("[CiDi] medal attempt " + cidiMedalAttempts + " failed:", e && e.code);
+    // transient failure → retry with growing backoff (4s, 8s, 12s…)
+    setTimeout(cidiFlushMedal, 4000 * cidiMedalAttempts);
+  });
+}
+function cidiMaybeClaimMedal(){
+  // Medal: "Reach Level 80" — persist eligibility FIRST, then flush
+  if(level >= CIDI_MEDAL_LEVEL) cidiMedalMarkPending();
+  cidiFlushMedal();
 }
 
 // ── Rewarded ad: REAL CiDi ad when available, simulated fallback ──
