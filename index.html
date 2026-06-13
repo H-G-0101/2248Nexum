@@ -5181,7 +5181,7 @@ function showLevelUp(value){
   bl.style.background="linear-gradient(180deg,"+lighten(col,18)+","+col+")";
   $("#luBlockVal").style.color=isLightColor(col)?"#33333f":"#fff";
   $("#luReward").textContent=LU_BASE_REWARD;
-  luResolved = false;            // re-arm the level-up buttons
+  luResolved = false; luAdPending = false;   // re-arm the level-up buttons
   $("#levelUpModal").classList.add("show");
   // animate the pointer bouncing across the bar
   const start=performance.now(), period=1700;
@@ -5265,33 +5265,40 @@ function gemFlyReward(amount, fromEl){
 
 // Re-entry guard: a fast double-tap on any level-up button must not
 // double-credit gems or call advancePhase twice (level skip).
-let luResolved = false;
+let luResolved = false;     // a terminal action (reward granted / closed) ran
+let luAdPending = false;    // an ad attempt is in flight — block re-entry
 $("#luClaim").addEventListener("click",()=>{
-  if(luResolved) return;
-  // The multiplied reward is EARNED BY WATCHING AN AD (original's rule):
-  // lock the multiplier at click time (the arrow keeps sweeping), play
-  // the rewarded ad (real CiDi in-platform / simulated in dev), and only
-  // grant + advance when the ad actually rewards. On failure the player
-  // stays on the modal — can retry or take "No Thanks".
+  // Re-entry guard at TAP time (not at reward time): the previous bug
+  // let a second tap fire while the first ad was still loading, and the
+  // reward path didn't re-verify — so gems could land without/with a
+  // half-watched ad. Now any pending attempt or resolved modal blocks
+  // the tap, and the reward only applies if THIS attempt is still the
+  // live one and the modal is genuinely unresolved.
+  if(luResolved || luAdPending) return;
+  luAdPending = true;
   const mult = luMult;
-  showRewardedAd(()=>{
-    if(luResolved) return;
-    luResolved = true;
-    const amt = LU_BASE_REWARD * mult;
-    gems += amt; updateHUD();
-    gemFlyReward(amt, document.getElementById("luClaim"));
-    advancePhase();
-  });
+  showRewardedAd(
+    ()=>{                                   // onReward — ad CONFIRMED only
+      luAdPending = false;
+      if(luResolved) return;                // safety: already handled
+      luResolved = true;
+      const amt = LU_BASE_REWARD * mult;
+      gems += amt; updateHUD();
+      gemFlyReward(amt, document.getElementById("luClaim"));
+      advancePhase();
+    },
+    ()=>{ luAdPending = false; }            // onFail/dismiss — re-arm, stay on modal
+  );
 });
 $("#luNo").addEventListener("click",()=>{
-  if(luResolved) return;
+  if(luResolved || luAdPending) return;
   luResolved = true;
   gems += LU_BASE_REWARD; updateHUD();
   gemFlyReward(LU_BASE_REWARD, document.getElementById("luNo"));
   advancePhase();
 });
 $("#luClose").addEventListener("click",()=>{
-  if(luResolved) return;
+  if(luResolved || luAdPending) return;
   luResolved = true;
   advancePhase();
 });
@@ -5762,7 +5769,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-11.15";
+const BUILD = "2026-06-11.17";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
@@ -5998,49 +6005,46 @@ function adFailToast(msg){
   document.body.appendChild(t);
   setTimeout(()=> t.remove(), 1800);
 }
-function showRewardedAd(onReward){
+function showRewardedAd(onReward, onFail){
+  // onReward fires ONLY on a confirmed ad; onFail fires on every other
+  // outcome (busy, dismissed, error, no-ad-available) so callers can
+  // re-arm their buttons without ever granting a reward by accident.
+  const fail = (msg)=>{ if(msg) adFailToast(msg); if(typeof onFail === "function") onFail(); };
   // Real CiDi ad ONLY in-platform (tempToken present in the URL).
-  // In dev/normal browsers the simulated overlay keeps flows testable.
   const inPlatform = new URLSearchParams(location.search).has("tempToken");
   if(inPlatform && window.CiDiSDK && typeof CiDiSDK.showRewardedAd === "function"){
-    if(adShowing) return;
+    if(adShowing){ if(typeof onFail === "function") onFail(); return; }
     adShowing = true;
     const wasPlaying = playing; playing = false;     // freeze input behind the ad
-    // Instant feedback: the gap between the tap and the CiDi ad taking
-    // over can be a few seconds — show a spinner so the player never
-    // thinks the button is broken (and never double-taps).
     const loader = document.getElementById("adLoading");
     loader.classList.add("show");
     const hideLoader = () => loader.classList.remove("show");
-    const loaderSafety = setTimeout(hideLoader, 10000);  // ad is on top by then
+    const loaderSafety = setTimeout(hideLoader, 10000);
     CiDiSDK.showRewardedAd().then(result => {
       clearTimeout(loaderSafety); hideLoader();
       adShowing = false; playing = wasPlaying;
       if(result && result.success === true){
         if(typeof onReward === "function") onReward();
       } else {
-        adFailToast();
+        fail();                                       // not rewarded → no gems
       }
     }).catch(err => {
       clearTimeout(loaderSafety); hideLoader();
       adShowing = false; playing = wasPlaying;
       console.warn("[CiDi] ad:", err && err.error, err && err.message);
-      adFailToast();
+      fail();
     });
     return;
   }
-  // SECURITY: the simulated ad is a DEV-ONLY tool. In production the
-  // game is distributed exclusively through the CiDi launch link (which
-  // always carries tempToken → real ads). Anyone hitting the raw URL
-  // must NOT get free rewards from a fake 5s ad.
+  // SECURITY: the simulated ad is a DEV-ONLY tool.
   const isDev = /^(localhost|127\.|192\.168\.)/.test(location.hostname) ||
                 new URLSearchParams(location.search).has("dev");
-  if(isDev){ showSimulatedAd(onReward); return; }
-  adFailToast("ADS AVAILABLE IN THE CIDI APP ONLY");
+  if(isDev){ showSimulatedAd(onReward, onFail); return; }
+  fail("ADS AVAILABLE IN THE CIDI APP ONLY");
 }
 
-function showSimulatedAd(onReward){
-  if(adShowing) return;
+function showSimulatedAd(onReward, onFail){
+  if(adShowing){ if(typeof onFail === "function") onFail(); return; }
   adShowing = true;
   const wasPlaying = playing; playing = false;   // freeze gameplay behind the ad
   const ov = document.getElementById("adOverlay");
@@ -7531,13 +7535,14 @@ function closeResetConfirm(){
 
 function executeFullReset(){
   // ── PROGRESS-ONLY RESET ───────────────────────────────────────
-  // Restarts the JOURNEY (level, score, board, snapshots, map) and the
-  // ranking identity. Everything the player ACQUIRED is kept: diamond
-  // balance, shop ad progress, highest-block record + collection,
+  // Restarts the JOURNEY (level, score, board, snapshots, map, the
+  // highest-block card/collection) and the ranking identity. What the
+  // player ACQUIRED is kept: diamond balance, shop ad progress,
   // daily-reward streak, tutorials seen, settings and nickname/avatar.
   level            = 1;          // back to the very first phase
   score            = 0;          // no score
   highest          = 2;          // progress bar: no player merges yet
+  bestBlock        = 2;          // home card "YOUR HIGHEST BLOCK" → 2
   journeyCompleted = 0;          // lock all levels except phase 1
   booted           = false;      // force a clean boot on next PLAY
   playing          = false;
@@ -7557,9 +7562,10 @@ function executeFullReset(){
   // even though all in-memory variables were reset above.
   try{
     localStorage.removeItem("save2248");  // wipes level, board, score
-    // KEPT on purpose (progress-only reset): best2248, gems2248,
-    // shopAdProg2248, swapTut2248, smashTut2248, cidiTask2248,
-    // daily-reward keys, settings, nick/avatar.
+    localStorage.removeItem("best2248");  // highest-block card/collection
+    // KEPT on purpose (progress-only reset): gems2248, shopAdProg2248,
+    // swapTut2248, smashTut2248, cidiTask2248, daily-reward keys,
+    // settings, nick/avatar.
   }catch(e){}
 
   // ── 4b. Remove the player from the LIVE RANKINGS ──────────────
