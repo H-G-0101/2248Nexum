@@ -5784,33 +5784,48 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-11.26-debug";
+const BUILD = "2026-06-11.27-debug";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
 const CIDI = { client:null, ready:false, storageReady:false, medalOwned:false };
+// ── TEMP debug log buffer (captures the whole init chain) ──
+const DBG_LOG = [];
+function dlog(msg){
+  const t = (performance.now()/1000).toFixed(2);
+  DBG_LOG.push("[" + t + "s] " + msg);
+  if(DBG_LOG.length > 40) DBG_LOG.shift();
+  console.log("[CiDi]", msg);
+}
+window.addEventListener("error", e => dlog("JS ERROR: " + (e.message||e)) );
+dlog("script parsed");
 const CIDI_MEDAL_LEVEL = 100;  // medal condition: "Reach Level 100" (set in the CiDi panel)
 
 async function cidiInit(){
-  // 1) Storage bootstrap — on Pi Browser iOS, localStorage only works
-  //    after CiDiSDK.init(). Top-level reads may have missed persisted
-  //    data there, so we re-sync afterwards.
+  dlog("cidiInit start");
+  dlog("CiDiSDK present: " + !!window.CiDiSDK + " / init fn: " + !!(window.CiDiSDK&&CiDiSDK.init));
+  dlog("CidiProxySDK present: " + !!window.CidiProxySDK);
+  dlog("tempToken in URL: " + new URLSearchParams(location.search).has("tempToken"));
+  // 1) Storage bootstrap
   try{
-    if(window.CiDiSDK && CiDiSDK.init) await CiDiSDK.init();
-  }catch(e){ console.warn("[CiDi] init:", e && e.message); }
+    if(window.CiDiSDK && CiDiSDK.init){ await CiDiSDK.init(); dlog("CiDiSDK.init() ok"); }
+    else dlog("CiDiSDK.init() SKIPPED (sdk/init missing)");
+  }catch(e){ dlog("CiDiSDK.init() FAILED: " + (e&&(e.message||e.code||e))); }
   CIDI.storageReady = true;
-  try{ reloadPersistedState(); }catch(e){ console.warn("[CiDi] resync:", e); }
+  try{ reloadPersistedState(); }catch(e){ dlog("resync failed: " + e); }
 
-  // 2) Proxy login (exchanges tempToken from the URL for an accessToken)
+  // 2) Proxy login
   try{
     if(window.CidiProxySDK){
+      dlog("creating proxy client…");
       CIDI.client = CidiProxySDK.createClient({
         baseURL: "https://elf-proxy.cidi.games/api/v1",
         apiKey:  CIDI_API_KEY
       });
+      dlog("client created, calling auth.login()…");
       await CIDI.client.auth.login();
       CIDI.ready = true;
-      console.log("[CiDi] login ok");
+      dlog("LOGIN OK");
       // refresh medal ownership so we never re-claim
       try{
         const r = await CIDI.client.report.medalOwnership();
@@ -5828,11 +5843,11 @@ async function cidiInit(){
       cidiFlushMedal();
       cidiFlushTask();      // same-day window only
       cidiFlushScore();     // terminal-session score
-    }
+    } else { dlog("CidiProxySDK MISSING — cannot login"); }
   }catch(e){
-    // TEMP_TOKEN_NOT_FOUND etc. = running outside the platform — fine.
-    console.warn("[CiDi] login skipped:", e && e.code, e && e.message);
+    dlog("LOGIN FAILED: " + (e && (e.code||e.message||JSON.stringify(e))));
   }
+  dlog("cidiInit done — ready=" + CIDI.ready);
 }
 
 // Re-read persisted state after storage becomes available (Pi iOS).
@@ -6029,20 +6044,26 @@ let lastAdResult = "(no ad yet)";
 function buildDebugPanel(){
   const has = (x)=> x ? "yes" : "NO";
   const sp = new URLSearchParams(location.search);
+  // which ad path will showRewardedAd take right now?
+  const inPlat = sp.has("tempToken");
+  const realPath = inPlat && window.CiDiSDK && typeof CiDiSDK.showRewardedAd==="function";
+  const isDev = /^(localhost|127\.|192\.168\.)/.test(location.hostname) || sp.has("dev");
+  let adPath = realPath ? "REAL CiDi ad" : (isDev ? "SIMULATED (dev)" : "BLOCKED → 'CiDi app only' toast");
   const lines = [
     "BUILD: " + (typeof BUILD!=="undefined"?BUILD:"?"),
     "host: " + location.hostname,
-    "tempToken: " + has(sp.has("tempToken")),
+    "tempToken: " + has(inPlat),
     "CiDiSDK loaded: " + has(window.CiDiSDK),
-    "  .showRewardedAd: " + has(window.CiDiSDK && typeof CiDiSDK.showRewardedAd==="function"),
+    "  .showRewardedAd fn: " + has(window.CiDiSDK && typeof CiDiSDK.showRewardedAd==="function"),
+    "  .init fn: " + has(window.CiDiSDK && typeof CiDiSDK.init==="function"),
     "CidiProxySDK: " + has(window.CidiProxySDK),
     "CIDI.ready (login): " + has(typeof CIDI!=="undefined" && CIDI.ready),
-    "CIDI.medalOwned: " + has(typeof CIDI!=="undefined" && CIDI.medalOwned),
-    "gems: " + (typeof gems!=="undefined"?gems:"?"),
-    "level: " + (typeof level!=="undefined"?level:"?"),
+    "→ AD PATH NOW: " + adPath,
+    "gems: " + (typeof gems!=="undefined"?gems:"?") + "  level: " + (typeof level!=="undefined"?level:"?"),
     "adShowing: " + has(typeof adShowing!=="undefined" && adShowing),
-    "LAST AD RESULT:",
-    "  " + lastAdResult,
+    "LAST AD RESULT: " + lastAdResult,
+    "──── INIT LOG ────",
+    DBG_LOG.join("\n"),
   ];
   return lines.join("\n");
 }
@@ -6095,8 +6116,10 @@ function showRewardedAd(onReward, onFail){
   const fail = (msg)=>{ if(msg) adFailToast(msg); if(typeof onFail === "function") onFail(); };
   // Real CiDi ad ONLY in-platform (tempToken present in the URL).
   const inPlatform = new URLSearchParams(location.search).has("tempToken");
+  dlog("showRewardedAd: inPlatform=" + inPlatform + " sdkFn=" + !!(window.CiDiSDK&&typeof CiDiSDK.showRewardedAd==="function"));
   if(inPlatform && window.CiDiSDK && typeof CiDiSDK.showRewardedAd === "function"){
-    if(adShowing){ if(typeof onFail === "function") onFail(); return; }
+    if(adShowing){ dlog("ad blocked: adShowing already true"); if(typeof onFail === "function") onFail(); return; }
+    dlog("calling CiDiSDK.showRewardedAd()…");
     adShowing = true;
     const wasPlaying = playing; playing = false;     // freeze input behind the ad
     const loader = document.getElementById("adLoading");
