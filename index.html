@@ -5781,49 +5781,32 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-11.32-debug";
+const BUILD = "2026-06-13.1";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
 const CIDI = { client:null, ready:false, loggedIn:false, storageReady:false, medalOwned:false };
-// ── TEMP debug log buffer (captures the whole init chain) ──
-const DBG_LOG = [];
-function dlog(msg){
-  const t = (performance.now()/1000).toFixed(2);
-  DBG_LOG.push("[" + t + "s] " + msg);
-  if(DBG_LOG.length > 40) DBG_LOG.shift();
-  console.log("[CiDi]", msg);
-}
-window.addEventListener("error", e => dlog("JS ERROR: " + (e.message||e)) );
-dlog("script parsed");
+
 const CIDI_MEDAL_LEVEL = 100;  // medal condition: "Reach Level 100" (set in the CiDi panel)
 
 async function cidiInit(){
-  dlog("cidiInit start");
-  dlog("CiDiSDK present: " + !!window.CiDiSDK + " / init fn: " + !!(window.CiDiSDK&&CiDiSDK.init));
-  dlog("CidiProxySDK present: " + !!window.CidiProxySDK);
-  dlog("tempToken in URL: " + new URLSearchParams(location.search).has("tempToken"));
   // 1) Storage bootstrap
   try{
-    if(window.CiDiSDK && CiDiSDK.init){ await CiDiSDK.init(); dlog("CiDiSDK.init() ok"); }
-    else dlog("CiDiSDK.init() SKIPPED (sdk/init missing)");
-  }catch(e){ dlog("CiDiSDK.init() FAILED: " + (e&&(e.message||e.code||e))); }
+    if(window.CiDiSDK && CiDiSDK.init){ await CiDiSDK.init(); }
+  }catch(e){ console.warn("[CiDi] init:", e && (e.message||e.code)); }
   CIDI.storageReady = true;
-  try{ reloadPersistedState(); }catch(e){ dlog("resync failed: " + e); }
+  try{ reloadPersistedState(); }catch(e){}
 
   // 2) Proxy login
   try{
     if(window.CidiProxySDK){
-      dlog("creating proxy client…");
       CIDI.client = CidiProxySDK.createClient({
         baseURL: "https://elf-proxy.cidi.games/api/v1",
         apiKey:  CIDI_API_KEY
       });
       CIDI.ready = true;                 // client ready for reports (like Bubble)
-      dlog("client created, calling auth.login()…");
       await CIDI.client.auth.login();
       CIDI.loggedIn = true;
-      dlog("LOGIN OK");
       // refresh medal ownership so we never re-claim
       try{
         const r = await CIDI.client.report.medalOwnership();
@@ -5841,33 +5824,18 @@ async function cidiInit(){
       cidiFlushMedal();
       cidiFlushTask();      // same-day window only
       cidiFlushScore();     // terminal-session score
-    } else { dlog("CidiProxySDK MISSING — cannot login"); }
+    }
   }catch(e){
-    // rich error dump: surface every field the proxy SDK may expose
-    let det = [];
-    try{
-      if(e){
-        if(e.code) det.push("code="+e.code);
-        if(e.status) det.push("status="+e.status);
-        if(e.statusCode) det.push("statusCode="+e.statusCode);
-        if(e.message) det.push("msg="+e.message);
-        if(e.response){
-          if(e.response.status) det.push("rstatus="+e.response.status);
-          if(e.response.data) det.push("rdata="+JSON.stringify(e.response.data).slice(0,160));
-        }
-        if(e.data) det.push("data="+JSON.stringify(e.data).slice(0,160));
-        if(!det.length) det.push(JSON.stringify(e).slice(0,200));
-      }
-    }catch(_){ det.push("(unserializable error)"); }
-    dlog("LOGIN FAILED: " + det.join(" | "));
+    // login failed (e.g. expired tempToken when opened outside a fresh
+    // CiDi launch) — fine; reports just stay disabled this session.
+    console.warn("[CiDi] login failed:", e && (e.code||e.message));
   }
-  dlog("cidiInit done — ready=" + CIDI.ready);
 }
 
 // CiDi platform bootstrap — called AFTER all const defs above (CIDI,
-// dlog, CIDI_API_KEY…) to avoid the temporal-dead-zone ReferenceError
-// that was silently killing login. .catch surfaces any failure to DBG.
-cidiInit().catch(e => dlog("cidiInit THREW: " + (e && (e.message||e))));
+// CIDI_API_KEY…) to avoid the temporal-dead-zone ReferenceError
+// that was silently killing login. .catch surfaces any failure.
+cidiInit().catch(e => console.warn("[CiDi] init error:", e && (e.message||e)));
 
 // Re-read persisted state after storage becomes available (Pi iOS).
 // Only cheap globals + UI refresh; the board save is read on Play.
@@ -6043,81 +6011,6 @@ function cidiMaybeClaimMedal(){
 }
 
 // ── Rewarded ad: REAL CiDi ad when available, simulated fallback ──
-// TEMP diagnostic — shows the raw CiDi ad result/error on screen so we
-// can see it inside the CiDi app (no console needed). Remove after debug.
-function adDebugToast(msg){
-  const t = document.createElement("div");
-  t.textContent = msg;
-  t.style.cssText =
-    "position:fixed;left:8px;right:8px;top:80px;z-index:3000;" +
-    "background:rgba(10,6,30,0.96);color:#9fe;font-weight:700;font-size:13px;" +
-    "line-height:1.4;padding:12px 14px;border-radius:12px;word-break:break-all;" +
-    "border:2px solid rgba(120,200,255,0.5);text-align:center;";
-  document.body.appendChild(t);
-  setTimeout(()=> t.remove(), 6000);
-}
-// ── TEMP on-screen debug button + panel (remove after debugging) ──
-// Tap the floating "DBG" button anytime to dump live state: build,
-// platform/token, SDK presence, login status, last ad result, gems.
-let lastAdResult = "(no ad yet)";
-function buildDebugPanel(){
-  const has = (x)=> x ? "yes" : "NO";
-  const sp = new URLSearchParams(location.search);
-  // which ad path will showRewardedAd take right now?
-  const inPlat = sp.has("tempToken");
-  const realPath = inPlat && window.CiDiSDK && typeof CiDiSDK.showRewardedAd==="function";
-  const isDev = /^(localhost|127\.|192\.168\.)/.test(location.hostname) || sp.has("dev");
-  let adPath = realPath ? "REAL CiDi ad" : (isDev ? "SIMULATED (dev)" : "BLOCKED → 'CiDi app only' toast");
-  const lines = [
-    "BUILD: " + (typeof BUILD!=="undefined"?BUILD:"?"),
-    "host: " + location.hostname,
-    "tempToken: " + has(inPlat),
-    "CiDiSDK loaded: " + has(window.CiDiSDK),
-    "  .showRewardedAd fn: " + has(window.CiDiSDK && typeof CiDiSDK.showRewardedAd==="function"),
-    "  .init fn: " + has(window.CiDiSDK && typeof CiDiSDK.init==="function"),
-    "CidiProxySDK: " + has(window.CidiProxySDK),
-    "CIDI.ready (client): " + has(typeof CIDI!=="undefined" && CIDI.ready),
-    "CIDI.loggedIn: " + has(typeof CIDI!=="undefined" && CIDI.loggedIn),
-    "→ AD PATH NOW: " + adPath,
-    "gems: " + (typeof gems!=="undefined"?gems:"?") + "  level: " + (typeof level!=="undefined"?level:"?"),
-    "adShowing: " + has(typeof adShowing!=="undefined" && adShowing),
-    "LAST AD RESULT: " + lastAdResult,
-    "──── INIT LOG ────",
-    DBG_LOG.join("\n"),
-  ];
-  return lines.join("\n");
-}
-function showDebugPanel(){
-  let p = document.getElementById("dbgPanel");
-  if(p){ p.remove(); return; }              // toggle off
-  p = document.createElement("div");
-  p.id = "dbgPanel";
-  p.style.cssText =
-    "position:fixed;left:8px;right:8px;top:70px;z-index:4000;" +
-    "background:rgba(8,5,24,0.97);color:#9fe;font:600 13px/1.5 monospace;" +
-    "white-space:pre-wrap;word-break:break-all;padding:14px 16px;border-radius:12px;" +
-    "border:2px solid rgba(120,200,255,0.55);max-height:70vh;overflow:auto;";
-  p.textContent = buildDebugPanel();
-  const close = document.createElement("button");
-  close.textContent = "× close";
-  close.style.cssText = "display:block;margin:12px auto 0;padding:8px 18px;border:none;border-radius:10px;background:#3a4090;color:#fff;font-weight:800;";
-  close.onclick = ()=> p.remove();
-  p.appendChild(close);
-  document.body.appendChild(p);
-}
-(function addDebugButton(){
-  const b = document.createElement("button");
-  b.id = "dbgBtn";
-  b.textContent = "DBG";
-  b.style.cssText =
-    "position:fixed;right:10px;bottom:96px;z-index:4001;width:52px;height:52px;" +
-    "border-radius:50%;border:2px solid #9fe;background:rgba(20,12,50,0.9);" +
-    "color:#9fe;font-weight:900;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.5);";
-  b.onclick = showDebugPanel;
-  if(document.body) document.body.appendChild(b);
-  else window.addEventListener("DOMContentLoaded", ()=> document.body.appendChild(b));
-})();
-
 function adFailToast(msg){
   const t = document.createElement("div");
   t.textContent = msg || "AD UNAVAILABLE — TRY AGAIN";
@@ -6136,10 +6029,8 @@ function showRewardedAd(onReward, onFail){
   const fail = (msg)=>{ if(msg) adFailToast(msg); if(typeof onFail === "function") onFail(); };
   // Real CiDi ad ONLY in-platform (tempToken present in the URL).
   const inPlatform = new URLSearchParams(location.search).has("tempToken");
-  dlog("showRewardedAd: inPlatform=" + inPlatform + " sdkFn=" + !!(window.CiDiSDK&&typeof CiDiSDK.showRewardedAd==="function"));
   if(inPlatform && window.CiDiSDK && typeof CiDiSDK.showRewardedAd === "function"){
-    if(adShowing){ dlog("ad blocked: adShowing already true"); if(typeof onFail === "function") onFail(); return; }
-    dlog("calling CiDiSDK.showRewardedAd()…");
+    if(adShowing){ if(typeof onFail === "function") onFail(); return; }
     adShowing = true;
     const wasPlaying = playing; playing = false;     // freeze input behind the ad
     const loader = document.getElementById("adLoading");
@@ -6148,18 +6039,16 @@ function showRewardedAd(onReward, onFail){
     // Matches the working game EXACTLY: await showRewardedAd() with NO
     // arguments; only success===true rewards; any other case fails.
     (async ()=>{
-      let ok = false, info = "";
+      let ok = false;
       try{
-        const r = await CiDiSDK.showRewardedAd();
-        ok = !!(r && r.success === true);
-        info = ok ? "RESULT: success" : ("RESULT: " + JSON.stringify(r));
+        const r = await CiDiSDK.showRewardedAd();   // no args (matches working game)
+        ok = !!(r && r.success === true);            // only success===true rewards
       }catch(e){
         ok = false;
-        info = "ERROR: " + (e && (e.code||e.error||e.message) || JSON.stringify(e));
+        console.warn("[CiDi] ad:", e && (e.code||e.error||e.message));
       }
       hideLoader();
       adShowing = false; playing = wasPlaying;
-      lastAdResult = info; dlog(info); adDebugToast(info);
       if(ok){ if(typeof onReward === "function") onReward(); }
       else  { if(typeof onFail   === "function") onFail();   }
     })();
