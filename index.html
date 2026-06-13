@@ -5781,11 +5781,11 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.1";
+const BUILD = "2026-06-13.2-dbg";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
-const CIDI = { client:null, ready:false, loggedIn:false, storageReady:false, medalOwned:false };
+const CIDI = { client:null, ready:false, loggedIn:false, storageReady:false, medalOwned:false, adPlays:0, adOk:0, adFail:0, adLast:"—", lastScoreReported:0 };
 
 const CIDI_MEDAL_LEVEL = 100;  // medal condition: "Reach Level 100" (set in the CiDi panel)
 
@@ -5953,6 +5953,7 @@ function cidiFlushScore(){
     callbackUrl: location.origin
   }).then(()=>{
     cidiScoreInFlight = false;
+    CIDI.lastScoreReported = pend;
     console.log("[CiDi] score reported:", pend, "(attempt " + cidiScoreAttempts + ")");
     try{
       const cur = parseInt(localStorage.getItem("cidiScorePend2248") || "0", 10) || 0;
@@ -6011,6 +6012,104 @@ function cidiMaybeClaimMedal(){
 }
 
 // ── Rewarded ad: REAL CiDi ad when available, simulated fallback ──
+// ════════════════ CiDi SDK DEBUG PANEL ════════════════════════
+// Toggleable diagnostic overlay (matches the in-house tester layout).
+// Set DEBUG_PANEL_ENABLED=false to hide the floating button entirely
+// before publishing. The panel itself never affects gameplay.
+const DEBUG_PANEL_ENABLED = true;
+
+function _dbgWins(){
+  try{ const d=JSON.parse(localStorage.getItem("dr_state")||"{}"); }catch(e){}
+  // wins today = whether a task was reported for today's bizDate
+  return localStorage.getItem("cidiTask2248") === cidiBizDate() ? 1 : 0;
+}
+function buildCidiDebug(){
+  const yn = (v,good)=> '<span style="color:'+(v?(good===false?"#ff6b6b":"#6ee787"):(good===false?"#6ee787":"#ff6b6b"))+'">'+(v?"YES":"NO")+'</span>';
+  const sp = new URLSearchParams(location.search);
+  const tok = sp.get("tempToken") || "";
+  const tokShow = tok ? (tok.slice(0,6)+"…"+tok.slice(-4)+' <span style="color:#7a88aa">('+tok.length+" chars)</span>") : '<span style="color:#ff6b6b">none</span>';
+  const inPlat = sp.has("tempToken");
+  const key = (typeof CIDI_API_KEY!=="undefined") ? CIDI_API_KEY : "";
+  const taskToday = localStorage.getItem("cidiTask2248") === cidiBizDate();
+  let scorePend = 0;
+  try{ scorePend = parseInt(localStorage.getItem("cidiScorePend2248")||"0",10)||0; }catch(e){}
+  const curMetric = Math.max(score||0, scorePend, CIDI.lastScoreReported||0);
+  const H = (t)=>'<div style="color:#ffd23d;font-weight:800;margin:14px 0 4px;letter-spacing:1px">'+t+'</div>';
+  const R = (label,val)=>'<div>'+label+': '+val+'</div>';
+  let h = "";
+  h += H("LOGIN / ENVIRONMENT");
+  h += R("mode", '<span style="color:'+(inPlat?"#6ee787":"#ffb454")+'">'+(inPlat?"IN-PLATFORM":"STANDALONE / DEV")+'</span>');
+  h += R("1. SDK script loaded", yn(typeof CiDiSDK!=="undefined"));
+  h += R("2. API key set", yn(!!key)+' <span style="color:#7a88aa">'+(key?key.slice(0,11)+"…":"")+'</span>');
+  h += R("3. SDK client created", yn(!!CIDI.client));
+  h += R("4. tempToken in URL", tokShow);
+  h += R('<b style="color:#ffd23d">5. logged in</b>', yn(CIDI.loggedIn));
+  h += R("ad SDK available", yn(typeof CiDiSDK!=="undefined" && typeof CiDiSDK.showRewardedAd==="function"));
+
+  h += H("MEDAL (goal: reach lvl " + CIDI_MEDAL_LEVEL + ")");
+  h += R("condition met", (level>=CIDI_MEDAL_LEVEL?'<span style="color:#6ee787">yes</span>':'<span style="color:#ff6b6b">no</span>')+' <span style="color:#7a88aa">(unlocked '+(journeyCompleted+1)+')</span>');
+  h += R("owned (server)", CIDI.medalOwned?'<span style="color:#6ee787">yes</span>':'<span style="color:#ff6b6b">no</span>');
+  let medalLocal=false; try{ medalLocal = localStorage.getItem("cidiMedal2248")==="1"; }catch(e){}
+  h += R("claimed (local)", medalLocal?'<span style="color:#6ee787">yes</span>':'<span style="color:#ff6b6b">no</span>');
+
+  h += H("DAILY TASK (goal: 1 win/day · bizDate " + cidiBizDate() + ")");
+  h += R("wins today", '<b>'+(taskToday?1:0)+'</b>');
+  h += R("reported", taskToday?'<span style="color:#6ee787">YES</span>':'<span style="color:#ff6b6b">NO</span>');
+
+  h += H("TOURNAMENT (metric: peak single-level score)");
+  h += R("current metric", '<b style="color:#ffd23d">'+curMetric+'</b>');
+  h += R("best reported", '<b style="color:#ffd23d">'+(CIDI.lastScoreReported||0)+'</b>');
+
+  h += H("ADS");
+  h += R("plays "+CIDI.adPlays+' · ok <span style="color:#6ee787">'+CIDI.adOk+'</span> · fail <span style="color:#ff6b6b">'+CIDI.adFail+'</span>', "");
+  h += R("last", '<span style="color:#7a88aa">'+CIDI.adLast+'</span>');
+  return h;
+}
+
+function _dbgBtn(label, fn){
+  const b=document.createElement("button");
+  b.textContent=label;
+  b.style.cssText="flex:1 1 40%;min-width:120px;padding:12px 8px;border:1px solid #2a3a6a;border-radius:12px;background:#0e1a3a;color:#bcd;font-weight:800;font-size:14px;";
+  b.onclick=fn;
+  return b;
+}
+function openCidiDebug(){
+  let p=document.getElementById("cidiDbg");
+  if(p){ p.remove(); return; }
+  p=document.createElement("div");
+  p.id="cidiDbg";
+  p.style.cssText="position:fixed;inset:6px;z-index:5000;background:#0a1228;border:1px solid #1e2d55;border-radius:16px;overflow:auto;font:600 15px/1.5 monospace;color:#cdd;padding:0;";
+  const head=document.createElement("div");
+  head.style.cssText="position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:16px 18px;background:#0d1838;border-bottom:1px solid #1e2d55;";
+  head.innerHTML='<span style="color:#7fdfff;font-weight:800;font-size:18px">CiDi SDK Debug</span>';
+  const x=document.createElement("button");
+  x.textContent="✕"; x.style.cssText="border:none;background:none;color:#9ab;font-size:22px;font-weight:800;";
+  x.onclick=()=>p.remove(); head.appendChild(x);
+  const body=document.createElement("div"); body.style.cssText="padding:6px 18px 14px;";
+  body.innerHTML=buildCidiDebug();
+  const refresh=()=>{ body.innerHTML=buildCidiDebug(); };
+  const btns=document.createElement("div");
+  btns.style.cssText="display:flex;flex-wrap:wrap;gap:10px;padding:14px 18px 24px;";
+  btns.appendChild(_dbgBtn("Re-login", async()=>{ try{ await CIDI.client.auth.login(); CIDI.loggedIn=true; }catch(e){ CIDI.adLast="relogin err: "+(e&&(e.code||e.message)); } refresh(); }));
+  btns.appendChild(_dbgBtn("Query Medal", async()=>{ try{ const r=await CIDI.client.report.medalOwnership(); CIDI.medalOwned=!!(r&&r.owned); }catch(e){} refresh(); }));
+  btns.appendChild(_dbgBtn("Claim Medal", async()=>{ try{ await CIDI.client.report.medal(); CIDI.medalOwned=true; try{localStorage.setItem("cidiMedal2248","1");}catch(e){} }catch(e){} refresh(); }));
+  btns.appendChild(_dbgBtn("Query Task", async()=>{ refresh(); }));
+  btns.appendChild(_dbgBtn("Report Task", ()=>{ cidiTaskAttempts=0; try{localStorage.removeItem("cidiTask2248");}catch(e){} cidiReportTask(); setTimeout(refresh,600); }));
+  btns.appendChild(_dbgBtn("Report Tour", ()=>{ cidiScoreAttempts=0; cidiReportScore(); setTimeout(refresh,600); }));
+  btns.appendChild(_dbgBtn("↻ Refresh", refresh));
+  p.appendChild(head); p.appendChild(body); p.appendChild(btns);
+  document.body.appendChild(p);
+}
+(function addCidiDbgButton(){
+  if(!DEBUG_PANEL_ENABLED) return;
+  const b=document.createElement("button");
+  b.textContent="DBG";
+  b.style.cssText="position:fixed;right:10px;bottom:96px;z-index:5001;width:52px;height:52px;border-radius:50%;border:2px solid #7fdfff;background:rgba(10,18,40,0.92);color:#7fdfff;font-weight:900;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.5);";
+  b.onclick=openCidiDebug;
+  if(document.body) document.body.appendChild(b);
+  else window.addEventListener("DOMContentLoaded",()=>document.body.appendChild(b));
+})();
+
 function adFailToast(msg){
   const t = document.createElement("div");
   t.textContent = msg || "AD UNAVAILABLE — TRY AGAIN";
@@ -6038,15 +6137,19 @@ function showRewardedAd(onReward, onFail){
     const hideLoader = () => loader.classList.remove("show");
     // Matches the working game EXACTLY: await showRewardedAd() with NO
     // arguments; only success===true rewards; any other case fails.
+    CIDI.adPlays++;
     (async ()=>{
       let ok = false;
       try{
         const r = await CiDiSDK.showRewardedAd();   // no args (matches working game)
         ok = !!(r && r.success === true);            // only success===true rewards
+        CIDI.adLast = ok ? "success" : ("no reward: " + JSON.stringify(r));
       }catch(e){
         ok = false;
+        CIDI.adLast = "error: " + (e && (e.code||e.error||e.message) || "?");
         console.warn("[CiDi] ad:", e && (e.code||e.error||e.message));
       }
+      ok ? CIDI.adOk++ : CIDI.adFail++;
       hideLoader();
       adShowing = false; playing = wasPlaying;
       if(ok){ if(typeof onReward === "function") onReward(); }
