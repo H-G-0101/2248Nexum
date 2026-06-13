@@ -5630,9 +5630,6 @@ function refreshMusicUI(){
   const sl = document.getElementById("pauseMusicSlash");
   if(sl) sl.style.display = musicOn ? "none" : "";
 }
-// CiDi platform bootstrap (async; everything inside is guarded)
-cidiInit();
-
 // Autoplay policy: music can only start after the first user gesture
 document.addEventListener("pointerdown", function _mStart(){
   document.removeEventListener("pointerdown", _mStart);
@@ -5784,7 +5781,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-11.27-debug";
+const BUILD = "2026-06-11.28-debug";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
@@ -5849,6 +5846,11 @@ async function cidiInit(){
   }
   dlog("cidiInit done — ready=" + CIDI.ready);
 }
+
+// CiDi platform bootstrap — called AFTER all const defs above (CIDI,
+// dlog, CIDI_API_KEY…) to avoid the temporal-dead-zone ReferenceError
+// that was silently killing login. .catch surfaces any failure to DBG.
+cidiInit().catch(e => dlog("cidiInit THREW: " + (e && (e.message||e))));
 
 // Re-read persisted state after storage becomes available (Pi iOS).
 // Only cheap globals + UI refresh; the board save is read on Play.
