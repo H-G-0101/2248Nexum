@@ -5613,7 +5613,7 @@ function smashTap(obj){
 // (or a long time). Offers to DOUBLE the 2nd biggest block — putting
 // them one merge away from pairing — for gems OR a rewarded ad.
 // Shows at most once per phase; trackers reset in markPhaseStart().
-const DU_COST = 100, DU_MOVES = 35, DU_TIME_MS = 280000;
+const DU_COST = 100, DU_MOVES = 40, DU_TIME_MS = 280000;
 let duShownThisPhase = false, phaseMoves = 0, phaseStartMs = Date.now();
 let duTarget = null;
 
@@ -5923,7 +5923,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.20";
+const BUILD = "2026-06-13.21";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
