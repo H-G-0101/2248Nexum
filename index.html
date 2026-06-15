@@ -5923,13 +5923,13 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.18-dbg";
+const BUILD = "2026-06-13.19";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
 const CIDI = { client:null, ready:false, loggedIn:false, storageReady:false, medalOwned:false, adPlays:0, adOk:0, adFail:0, adLast:"—", lastScoreReported:0 };
 
-const CIDI_MEDAL_LEVEL = 2;    // TEST: "Reach Level 2" (CiDi launch test) — set back to 100 after
+const CIDI_MEDAL_LEVEL = 100;  // medal condition: "Reach Level 100" (set in the CiDi panel)
 
 async function cidiInit(){
   // 1) Storage bootstrap
@@ -6158,7 +6158,7 @@ function cidiMaybeClaimMedal(){
 // Toggleable diagnostic overlay (matches the in-house tester layout).
 // Set DEBUG_PANEL_ENABLED=false to hide the floating button entirely
 // before publishing. The panel itself never affects gameplay.
-const DEBUG_PANEL_ENABLED = true;
+const DEBUG_PANEL_ENABLED = false;
 
 function _dbgWins(){
   try{ const d=JSON.parse(localStorage.getItem("dr_state")||"{}"); }catch(e){}
