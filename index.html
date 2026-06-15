@@ -3796,15 +3796,15 @@ body{
 
         <!-- Tabs -->
         <div class="lb-tabs">
-          <div class="lb-tab active" id="lbTabBR">
+          <div class="lb-tab active" id="lbTabGlobal">
             <div class="lb-tab-inner">
-              📍 My Country
+              🌐 Global
             </div>
             <div class="lb-tab-bar"></div>
           </div>
-          <div class="lb-tab" id="lbTabGlobal">
+          <div class="lb-tab" id="lbTabBR">
             <div class="lb-tab-inner">
-              🌐 Global
+              📍 My Country
             </div>
             <div class="lb-tab-bar"></div>
           </div>
@@ -5923,7 +5923,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.19";
+const BUILD = "2026-06-13.20";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
@@ -7224,7 +7224,7 @@ win = function(){
 //  Tabs: My Country (auto-detected server-side via the request IP)
 //  and Global (flag emoji in front of each nickname).
 // ══════════════════════════════════════════════════════════════
-let lbCurrentTab = 'country';
+let lbCurrentTab = 'global';
 const LB_API = '';   // same-origin: the game and /api/* deploy together on Vercel
 
 // ── Anonymous identity + editable nickname (persisted) ─────────
@@ -7547,9 +7547,9 @@ document.getElementById('lbTabBR').addEventListener('click',     () => switchLbT
 document.getElementById('lbTabGlobal').addEventListener('click', () => switchLbTab('global'));
 
 function openLeaderboard(){
-  lbCurrentTab = 'country';
+  lbCurrentTab = 'global';
   document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
-  const cTab = document.getElementById(LB_TAB_IDS['country']);
+  const cTab = document.getElementById(LB_TAB_IDS['global']);
   if(cTab) cTab.classList.add('active');
   renderLbBody();
   closeAllModals();
