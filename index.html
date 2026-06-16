@@ -4731,9 +4731,24 @@ function cellFromPoint(clientX,clientY){
       if(dist < bestDist){ bestDist = dist; bestC = c; bestR = r; }
     }
   }
-  // Only snap if pointer is within half-cell+gap of center (generous hit area)
   if(bestC < 0 || bestR < 0) return null;
   if(!board[bestR]) return null;
+  // CONFIRMATION RADIUS: only register the cell once the finger is
+  // genuinely INSIDE it (near its center), not just nearest. Without
+  // this, dragging toward a diagonal cell clips the side cell on the way
+  // (its center is closer) and the game locks the horizontal link before
+  // the finger ever reaches the diagonal one. Requiring the finger to be
+  // within ~58% of the cell radius means a passing graze doesn't count —
+  // only a deliberate move into the cell does, so diagonal intent wins.
+  const cx = xOf(bestC) + cell/2;
+  const cy = yOf(bestR) + cell/2;
+  const inside = (x - cx)*(x - cx) + (y - cy)*(y - cy);
+  const radius = cell * 0.58;
+  if(inside > radius * radius){
+    // finger is in the gap between cells — keep the current selection
+    // (return the last linked tile so moveDrag treats it as "no change")
+    return (path.length ? path[path.length - 1] : null);
+  }
   return board[bestR][bestC] || null;
 }
 function adjacent(a,b){
@@ -5957,7 +5972,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.25";
+const BUILD = "2026-06-13.26";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
