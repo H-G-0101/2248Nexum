@@ -6017,7 +6017,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.33";
+const BUILD = "2026-06-13.34";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
@@ -6043,15 +6043,28 @@ async function cidiInit(){
       CIDI.ready = true;                 // client ready for reports (like Bubble)
       await CIDI.client.auth.login();
       CIDI.loggedIn = true;
-      // refresh medal ownership so we never re-claim
+      // RECONCILE medal ownership against the PLATFORM (source of truth).
+      // A local "already reported" flag can be a false positive: the
+      // client thought the report succeeded but it never reached CiDi.
+      // So we trust the server: if it says owned, sync local; if it says
+      // NOT owned but the player is eligible, clear the stale local flag
+      // and force a resend — the stuck player self-heals on next launch.
       try{
         const r = await CIDI.client.report.medalOwnership();
-        CIDI.medalOwned = !!(r && r.owned);
-        if(CIDI.medalOwned){
+        const ownedOnServer = !!(r && r.owned);
+        CIDI.medalOwned = ownedOnServer;
+        if(ownedOnServer){
           try{
             localStorage.setItem("cidiMedal2248","1");
             localStorage.removeItem("cidiMedalPend2248");
           }catch(e){}
+        } else {
+          // server does NOT have it → never trust a local "claimed" flag
+          try{ localStorage.removeItem("cidiMedal2248"); }catch(e){}
+          if(level >= CIDI_MEDAL_LEVEL){
+            cidiMedalAttempts = 0;                 // reset cap for this fresh check
+            cidiMedalMarkPending();                // mark eligible → flush will resend
+          }
         }
       }catch(e){}
       // RECOVERY PATH: anything pending from previous sessions (reports
