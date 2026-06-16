@@ -6017,7 +6017,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.28";
+const BUILD = "2026-06-13.30";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
@@ -6863,6 +6863,7 @@ document.getElementById("homeNavBtn").addEventListener("click", () => {
     homeScreen.style.display = 'flex';
     updateHome();
   }
+  updateHomeRank();   // keep the crown pill in sync with the real ranking
 });
 
 // ── Gem hud / plus btn open shop (no nav highlight) ───────────
@@ -7741,13 +7742,22 @@ document.getElementById('hudCrownBtn').addEventListener('click', openLeaderboard
 async function updateHomeRank(){
   const el = document.getElementById('hudRank');
   if(!el) return;
-  if(!/^https?:$/.test(location.protocol)){ el.textContent = '—'; return; }
+  // Show the player's SCORE on the leaderboard (their own, stable number)
+  // instead of their position — position shifts as others play and was
+  // confusing. Falls back to the live score if the server is unreachable.
+  const localScore = (typeof score === 'number' ? score : 0);
+  if(!/^https?:$/.test(location.protocol)){
+    el.textContent = formatScore(localScore);
+    return;
+  }
   try{
     const data = await lbFetch('global');
-    el.textContent = (data.me && data.me.rank)
-      ? '#' + Number(data.me.rank).toLocaleString('pt-BR')
-      : '—';
-  }catch(e){ el.textContent = '—'; }
+    const sv = (data.me && typeof data.me.score === 'number') ? data.me.score : null;
+    const best = Math.max(sv != null ? sv : 0, localScore);
+    el.textContent = formatScore(best);
+  }catch(e){
+    el.textContent = formatScore(localScore);
+  }
 }
 updateHomeRank();                                       // boot
 
