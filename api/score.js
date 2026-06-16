@@ -17,9 +17,14 @@ export default async function handler(req, res){
   const cleanNick =
     String(nick || '').replace(/[<>&"'`]/g, '').trim().slice(0, 14) || 'Player';
 
-  // país do jogador, resolvido pelo Vercel a partir do IP (grátis)
-  const country = String(req.headers['x-vercel-ip-country'] || 'XX')
+  // País: o jogador pode ESCOLHER manualmente no profile (override) caso
+  // a detecção automática erre. Se enviar um override válido (2 letras
+  // A-Z), usa ele; senão, cai no país detectado pelo Vercel via IP.
+  const manual = String(req.body && req.body.country || '')
+    .toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
+  const detected = String(req.headers['x-vercel-ip-country'] || 'XX')
     .toUpperCase().slice(0, 2);
+  const country = (manual.length === 2) ? manual : detected;
 
   // avatar escolhido (índice 0-39; default 0)
   let av = Number(req.body && req.body.av);
