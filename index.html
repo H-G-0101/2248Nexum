@@ -6017,7 +6017,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.30";
+const BUILD = "2026-06-13.33";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
@@ -7421,11 +7421,18 @@ function clearManualCountry(){
 }
 
 function formatScore(n){
-  // Exact number with separators up to 1M (like the original's "10,582");
-  // abbreviate only at large magnitudes where digits stop being readable.
+  // Exact number with thousand separators below 1M (e.g. "145.500").
+  // From 1M up: one decimal place, TRUNCATED (not rounded up), so
+  // 1.500.000 → "1,5M", 2.340.000 → "2,3M", 2.900.000 → "2,9M".
+  // Drop a trailing ",0" so exact millions show clean: 1.000.000 → "1M".
   n = Number(n);
-  if(n >= 1e9) return (n/1e9).toFixed(2).replace('.',',') + 'B';
-  if(n >= 1e6) return (n/1e6).toFixed(2).replace('.',',') + 'M';
+  const fmt = (v, suffix) => {
+    const t = Math.floor(v * 10) / 10;          // truncate to 1 decimal
+    const str = (t % 1 === 0) ? String(t) : t.toFixed(1).replace('.', ',');
+    return str + suffix;
+  };
+  if(n >= 1e9) return fmt(n/1e9, 'B');
+  if(n >= 1e6) return fmt(n/1e6, 'M');
   return n.toLocaleString('pt-BR');
 }
 
