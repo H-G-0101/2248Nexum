@@ -852,12 +852,37 @@ body{
 }
 
 /* ── Select Avatar modal ── */
-#avModal{
+#avModal, #countryModal{
   position:fixed;inset:0;z-index:120;
   background:rgba(2,4,18,0.82);
   display:none;align-items:center;justify-content:center;
 }
-#avModal.open{display:flex;}
+#avModal.open, #countryModal.open{display:flex;}
+.ctry-card{
+  width:min(92vw,380px);max-height:86dvh;overflow-y:auto;
+  background:#13235e;border-radius:20px;
+  box-shadow:0 16px 50px rgba(0,0,0,0.6);
+  animation:duIn .3s cubic-bezier(.2,1.4,.4,1);
+}
+.ctry-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:9px;
+  padding:14px 16px 6px;
+}
+.ctry-cell{
+  display:flex;align-items:center;gap:7px;
+  padding:11px 10px;border-radius:12px;cursor:pointer;
+  background:#1d2f6e;border:2px solid transparent;
+  transition:border-color .12s, transform .12s, background .12s;
+}
+.ctry-cell:active{ transform:scale(0.95); }
+.ctry-cell.sel{ border-color:#ffd23d; background:#26408a; }
+.ctry-flag{ font-size:22px;line-height:1; }
+.ctry-name{ color:#dde6ff;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.ctry-auto{
+  display:block;width:calc(100% - 32px);margin:8px 16px 18px;
+  padding:13px;border:none;border-radius:12px;
+  background:#2a3a7a;color:#cdd6ff;font-weight:800;font-size:14px;cursor:pointer;
+}
 .av-card{
   width:min(90vw,360px);max-height:86dvh;overflow-y:auto;
   background:#13235e;border-radius:20px;
@@ -3033,6 +3058,22 @@ body{
   </div>
 
   <!-- ── SELECT AVATAR + NICKNAME (feeds the live ranking) ── -->
+  <div id="countryModal">
+    <div class="ctry-card">
+      <div class="du-header">
+        <span class="du-title">SELECT COUNTRY</span>
+        <div class="du-close" id="ctryClose">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="#fff" stroke-width="3.5" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+        </div>
+      </div>
+      <div style="padding:6px 16px 4px;color:#aeb8e8;font-size:12.5px;text-align:center;line-height:1.5;">
+        Auto-detected from your connection.<br>Tap a flag to set it manually.
+      </div>
+      <div class="ctry-grid" id="ctryGrid"></div>
+      <button class="ctry-auto" id="ctryAuto">↺ Use auto-detected</button>
+    </div>
+  </div>
+
   <div id="avModal">
     <div class="av-card">
       <div class="du-header">
@@ -3338,9 +3379,9 @@ body{
               <span id="profGlobalRank">—</span>
             </div>
           </div>
-          <!-- Country Rank -->
-          <div class="prof-stat-card">
-            <div class="prof-stat-label">Country Rank</div>
+          <!-- Country Rank (tap to fix country if auto-detect is wrong) -->
+          <div class="prof-stat-card" id="profCountryCard" style="cursor:pointer;position:relative;">
+            <div class="prof-stat-label">Country Rank ✎</div>
             <div class="prof-stat-value">
               <span style="font-size:16px;" id="profCountryFlag">🌐</span>
               <span id="profCountryRank">—</span>
@@ -5734,6 +5775,10 @@ document.getElementById("duGems").addEventListener("click", ()=>{
 let duAdPending = false;
 document.getElementById("shufAdBtn").addEventListener("click", shuffleViaAd);
 document.getElementById("shufFreeBtn").addEventListener("click", shuffleFree);
+document.getElementById("profCountryCard")?.addEventListener("click", openCountryModal);
+document.getElementById("ctryClose")?.addEventListener("click", closeCountryModal);
+document.getElementById("ctryAuto")?.addEventListener("click", clearManualCountry);
+document.getElementById("countryModal")?.addEventListener("click", (e)=>{ if(e.target.id==="countryModal") closeCountryModal(); });
 document.getElementById("duAd").addEventListener("click", ()=>{
   if(duAdPending) return;                 // block double-tap during the ad
   duAdPending = true;
@@ -5972,7 +6017,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.26";
+const BUILD = "2026-06-13.28";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
@@ -6772,7 +6817,11 @@ async function fetchProfileRanks(){
     const [gd, cd] = await Promise.all([ lbFetch("global"), lbFetch("country") ]);
     g.textContent = (gd.me && gd.me.rank) ? "#" + Number(gd.me.rank).toLocaleString("pt-BR") : "—";
     c.textContent = (cd.me && cd.me.rank) ? "#" + Number(cd.me.rank).toLocaleString("pt-BR") : "—";
-    if(f && cd.country) f.textContent = flagEmoji(cd.country);
+    if(cd.country){
+      try{ localStorage.setItem("country2248", cd.country); }catch(e){}
+      // show the detected flag only if the player hasn't manually overridden
+      if(f && !getManualCountry()) f.textContent = flagEmoji(cd.country);
+    }
   }catch(e){
     g.textContent = "—"; c.textContent = "—";
   }
@@ -6784,6 +6833,11 @@ function openProfile(){
   updateProfile();
   refreshIdentityUI();                 // avatar + nick + flag on the user card
   fetchProfileRanks();                 // real Global/Country Rank (async)
+  // reflect any manually-chosen country on the flag right away
+  try{
+    const mc = getManualCountry();
+    if(mc){ const f=document.getElementById("profCountryFlag"); if(f) f.textContent = flagEmoji(mc); }
+  }catch(e){}
   const bs = document.getElementById("profBestScore");
   if(bs) bs.textContent = formatScore(score);   // real cumulative score
   document.getElementById("profileModal").classList.add("open");
@@ -7304,6 +7358,67 @@ function flagEmoji(cc){
                               0x1F1E6 + cc.charCodeAt(1) - 65);
 }
 
+// ── Manual country picker (fallback when IP auto-detect is wrong) ──
+// Major countries across the Americas, Europe and Asia.
+const COUNTRY_LIST = [
+  // Americas
+  ['BR','Brazil'],['US','USA'],['CA','Canada'],['MX','Mexico'],
+  ['AR','Argentina'],['CO','Colombia'],['CL','Chile'],['PE','Peru'],
+  // Europe
+  ['GB','UK'],['DE','Germany'],['FR','France'],['IT','Italy'],
+  ['ES','Spain'],['PT','Portugal'],['NL','Netherlands'],['RU','Russia'],
+  ['PL','Poland'],['SE','Sweden'],['UA','Ukraine'],['TR','Turkey'],
+  // Asia / Oceania
+  ['CN','China'],['JP','Japan'],['KR','S. Korea'],['IN','India'],
+  ['ID','Indonesia'],['PH','Philippines'],['VN','Vietnam'],['TH','Thailand'],
+  ['PK','Pakistan'],['SA','Saudi Arabia'],['AE','UAE'],['AU','Australia'],
+];
+function getManualCountry(){
+  try{ return localStorage.getItem("countryManual2248") || ""; }catch(e){ return ""; }
+}
+function getActiveCountry(){
+  // What flag is "current" for the player: their manual pick if set,
+  // otherwise the IP-detected country resolved by the server.
+  const manual = getManualCountry();
+  if(manual) return manual;
+  try{ return localStorage.getItem("country2248") || ""; }catch(e){ return ""; }
+}
+function openCountryModal(){
+  const grid = document.getElementById("ctryGrid");
+  const current = getActiveCountry();
+  grid.innerHTML = COUNTRY_LIST.map(([cc,name]) =>
+    `<div class="ctry-cell${cc===current?' sel':''}" data-cc="${cc}">
+       <span class="ctry-flag">${flagEmoji(cc)}</span>
+       <span class="ctry-name">${name}</span>
+     </div>`).join("");
+  grid.querySelectorAll(".ctry-cell").forEach(cell=>{
+    cell.addEventListener("click", ()=> setManualCountry(cell.dataset.cc));
+  });
+  document.getElementById("countryModal").classList.add("open");
+}
+function closeCountryModal(){
+  document.getElementById("countryModal").classList.remove("open");
+}
+function setManualCountry(cc){
+  try{ localStorage.setItem("countryManual2248", cc); }catch(e){}
+  // reflect immediately on the profile flag
+  const f = document.getElementById("profCountryFlag");
+  if(f) f.textContent = flagEmoji(cc);
+  const hf = document.getElementById("hudFlag");
+  if(hf) hf.textContent = flagEmoji(cc);
+  closeCountryModal();
+  lbLastSubmit = 0;          // allow an immediate re-submit with the new country
+  if(typeof lbSubmitScore === "function") lbSubmitScore();
+  setTimeout(()=>{ if(typeof fetchProfileRanks==="function") fetchProfileRanks(); }, 900);
+}
+function clearManualCountry(){
+  try{ localStorage.removeItem("countryManual2248"); }catch(e){}
+  closeCountryModal();
+  lbLastSubmit = 0;
+  if(typeof lbSubmitScore === "function") lbSubmitScore();
+  setTimeout(()=>{ if(typeof fetchProfileRanks==="function") fetchProfileRanks(); }, 900);
+}
+
 function formatScore(n){
   // Exact number with separators up to 1M (like the original's "10,582");
   // abbreviate only at large magnitudes where digits stop being readable.
@@ -7331,10 +7446,14 @@ function lbSubmitScore(){
   if(Date.now() - lbLastSubmit < 8000) return;          // client spam guard
   lbLastSubmit = Date.now();
   try{
+    let manualCC = "";
+    try{ manualCC = localStorage.getItem("countryManual2248") || ""; }catch(e){}
+    const payload = { id: playerId, nick: playerNick, score: score, av: myAvatar };
+    if(manualCC) payload.country = manualCC;        // override if user picked one
     fetch(LB_API + '/api/score', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: playerId, nick: playerNick, score: score, av: myAvatar })
+      body: JSON.stringify(payload)
     }).then(()=>{ setTimeout(updateHomeRank, 1200); }).catch(()=>{});
   }catch(e){}
 }
