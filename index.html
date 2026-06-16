@@ -4917,18 +4917,48 @@ function startDrag(obj){
   else if(!playing) return;
   dragging=true; path=[obj]; setSel(obj,true); drawLink(); linkSound(0);
 }
+function tryAddToPath(obj){
+  // Adds one tile if it's a legal next step. Returns true on success.
+  if(!obj) return false;
+  if(tut.active && !tut.allowed.has(obj.row+","+obj.col)) return false;
+  const last = path[path.length-1];
+  if(obj===last) return false;
+  if(path.indexOf(obj)!==-1) return false;
+  if(!adjacent(obj,last)) return false;
+  if(!canExtend(path, obj.value)) return false;
+  path.push(obj); setSel(obj,true); drawLink(); linkSound(path.length-1);
+  return true;
+}
 function moveDrag(obj){
   if(!dragging||!obj) return;
   if(tut.active && !tut.allowed.has(obj.row+","+obj.col)) return;
   const last = path[path.length-1];
   if(obj===last) return;
+  // backtrack: dragged back onto the previous tile → undo last link
   if(path.length>=2 && obj===path[path.length-2]){
     setSel(last,false); path.pop(); drawLink(); unlinkSound(path.length-1); return;
   }
   if(path.indexOf(obj)!==-1) return;
-  if(!adjacent(obj,last)) return;
-  if(!canExtend(path, obj.value)) return;
-  path.push(obj); setSel(obj,true); drawLink(); linkSound(path.length-1);
+  // Direct neighbour (incl. diagonal): normal add.
+  if(adjacent(obj,last)){
+    if(!canExtend(path, obj.value)) return;
+    path.push(obj); setSel(obj,true); drawLink(); linkSound(path.length-1);
+    return;
+  }
+  // GAP RECOVERY: a fast drag (esp. diagonal) can skip the intermediate
+  // cell, so pointermove lands on a tile that's 2 steps away. Find the
+  // single cell BETWEEN last and obj and try to bridge through it, so
+  // the link doesn't silently fail mid-swipe.
+  const dr = obj.row - last.row, dc = obj.col - last.col;
+  if(Math.abs(dr) <= 2 && Math.abs(dc) <= 2){
+    const midR = last.row + Math.sign(dr);
+    const midC = last.col + Math.sign(dc);
+    const mid = (board[midR] && board[midR][midC]) || null;
+    if(mid && mid!==obj && path.indexOf(mid)===-1){
+      // bridge through the intermediate tile, then the target
+      if(tryAddToPath(mid)) tryAddToPath(obj);
+    }
+  }
 }
 function endDrag(){
   if(!dragging) return;
@@ -5923,7 +5953,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.21";
+const BUILD = "2026-06-13.24";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
