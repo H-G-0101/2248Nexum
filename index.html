@@ -4717,13 +4717,17 @@ function cellFromPoint(clientX,clientY){
   const rect = boardEl.getBoundingClientRect();
   const x = clientX - rect.left, y = clientY - rect.top;
   if(x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
-  // Find nearest cell column and row by center distance
+  // Nearest cell by TRUE (euclidean) center distance. Manhattan distance
+  // (|dx|+|dy|) makes diamond-shaped zones that bias toward orthogonal
+  // cells, so a slow diagonal drag would "stick" to the side cell. Real
+  // distance gives circular zones — diagonals are picked fairly.
   let bestC = -1, bestR = -1, bestDist = Infinity;
   for(let r = 0; r < ROWS; r++){
     for(let c = 0; c < COLS; c++){
       const cx = xOf(c) + cell/2;
       const cy = yOf(r) + cell/2;
-      const dist = Math.abs(x - cx) + Math.abs(y - cy);
+      const ddx = x - cx, ddy = y - cy;
+      const dist = ddx*ddx + ddy*ddy;   // squared euclidean (no sqrt needed)
       if(dist < bestDist){ bestDist = dist; bestC = c; bestR = r; }
     }
   }
@@ -5953,7 +5957,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.24";
+const BUILD = "2026-06-13.25";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
