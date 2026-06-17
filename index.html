@@ -2946,8 +2946,8 @@ body{
       <!-- PLAY button -->
       <button class="play-btn" id="playBtn">PLAY</button>
 
-      <!-- JOURNEY button -->
-      <button class="journey-btn">
+      <!-- JOURNEY button (hidden — PLAY covers continuous play) -->
+      <button class="journey-btn" style="display:none;">
         <svg class="loc-ico" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
           <circle cx="12" cy="9" r="2.5" fill="#fff" stroke="none"/>
@@ -6017,7 +6017,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.34";
+const BUILD = "2026-06-13.35";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
