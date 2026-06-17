@@ -191,6 +191,25 @@ body{
   width:14px;height:14px;background:#e33;border-radius:50%;
   border:2px solid #1b2060;
 }
+/* When a reward is collectable, make the whole icon ask for a tap. */
+@keyframes rwBeckon{
+  0%,100%{ transform:scale(1) rotate(0deg); }
+  25%    { transform:scale(1.08) rotate(-5deg); }
+  75%    { transform:scale(1.08) rotate(5deg); }
+}
+@keyframes rwDotPulse{
+  0%,100%{ transform:scale(1);   box-shadow:0 0 0 0 rgba(255,60,60,0.7); }
+  50%    { transform:scale(1.25); box-shadow:0 0 10px 3px rgba(255,60,60,0.0); }
+}
+.rewards-btn.has-reward .rewards-ico{ animation:rwBeckon 1.2s ease-in-out infinite; }
+.rewards-btn.has-reward .rewards-dot{ animation:rwDotPulse 1s ease-in-out infinite; }
+.rw-collect-tip{
+  position:absolute;top:-26px;left:50%;transform:translateX(-50%);
+  background:#ffce3a;color:#5a3d00;font-weight:900;font-size:9px;letter-spacing:.5px;
+  padding:3px 7px;border-radius:8px;white-space:nowrap;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);display:none;
+}
+.rewards-btn.has-reward .rw-collect-tip{ display:block; animation:rwDotPulse 1.4s ease-in-out infinite; }
 .rewards-label{font-size:10px;font-weight:800;letter-spacing:1px;color:#ccd;}
 
 /* --- CENTER CONTENT --- */
@@ -2640,7 +2659,8 @@ body{
         <span id="hudRank">—</span>
       </div>
       <!-- Right: Rewards -->
-      <div class="rewards-btn">
+      <div class="rewards-btn" style="position:relative;">
+        <div class="rw-collect-tip">TAP TO COLLECT</div>
         <div class="rewards-ico">
           <div class="rewards-dot"></div>
           <svg viewBox="0 0 48 48" width="36" height="36">
@@ -6017,7 +6037,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.35";
+const BUILD = "2026-06-13.36";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
@@ -6517,27 +6537,27 @@ updateGems();
 //      - lastDate : str   — ISO date (YYYY-MM-DD) of last collection
 //      - collected: bool[] — index 0 = day 1, marks claimed days
 //
-//  Daily gems (cycle repeats every 7 days):
-//    Day 1:10 | Day 2:15 | Day 3:20 | Day 4:25 | Day 5:30 | Day 6:35 | Day 7:75
+//  Daily gems (cycle repeats every 7 days, +50% boosted):
+//    Day 1:15 | Day 2:23 | Day 3:30 | Day 4:38 | Day 5:45 | Day 6:53 | Day 7:113
 //
 //  Milestone bonuses (cumulative total streak days reached):
-//    Day  8 → +50  gems
-//    Day 15 → +100 gems
-//    Day 22 → +150 gems
-//    Day 30 → +250 gems
+//    Day  8 → +75  gems
+//    Day 15 → +150 gems
+//    Day 22 → +225 gems
+//    Day 30 → +375 gems
 // ═══════════════════════════════════════════════════════════════
 
 const DR_STORAGE_KEY = 'dr_state';
 
 // Gems awarded per day-in-cycle (index 0 = day 1 of cycle)
-const DR_DAY_GEMS = [10, 15, 20, 25, 30, 35, 75];
+const DR_DAY_GEMS = [15, 23, 30, 38, 45, 53, 113];   // +50% over base
 
 // Milestone bonuses triggered when total streak reaches a threshold
 const DR_MILESTONES = [
-  { atDay: 8,  gems: 50  },
-  { atDay: 15, gems: 100 },
-  { atDay: 22, gems: 150 },
-  { atDay: 30, gems: 250 },
+  { atDay: 8,  gems: 75  },   // +50%
+  { atDay: 15, gems: 150 },   // +50%
+  { atDay: 22, gems: 225 },   // +50%
+  { atDay: 30, gems: 375 },   // +50%
 ];
 
 /** Load state from localStorage; returns default if not found. */
@@ -6783,8 +6803,11 @@ document.getElementById("rwCollect").addEventListener("click", function() {
 // once a minute — so it turns OFF right after collecting and back ON
 // at midnight even if the app stays open.
 function drRefreshDot(){
+  const can = drCanCollect(drLoadState());
   const dot = document.querySelector('.rewards-dot');
-  if(dot) dot.style.display = drCanCollect(drLoadState()) ? 'block' : 'none';
+  if(dot) dot.style.display = can ? 'block' : 'none';
+  const btn = document.querySelector('.rewards-btn');
+  if(btn) btn.classList.toggle('has-reward', can);
 }
 drRefreshDot();
 setInterval(drRefreshDot, 60000);
