@@ -5086,9 +5086,10 @@ function resolveMerge(used, res){
   score += res.result;
   if(res.result>=128){ gems += 1; gemSound(0.12); }
   if(res.result>highest) highest = res.result;
-  // NOTE: bestBlock (home card) is NOT updated here — it only updates
-  // in win(), so the home card always shows the highest block from the
-  // last successfully COMPLETED phase, never from a run in progress.
+  // Record the highest block the moment it's created, so the profile
+  // collection (and home card) reflect what the player actually reached,
+  // even mid-run before completing the next phase.
+  if(res.result > bestBlock){ bestBlock = res.result; saveBest(); }
   floatScore(head, "+"+res.result);
   updateHUD(); updateProgress();
   // Original-style pacing: after the merge pop, the HOLES stay visible
@@ -6023,7 +6024,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.38";
+const BUILD = "2026-06-13.40";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
@@ -7395,6 +7396,11 @@ const COUNTRY_LIST = [
   ['CN','China'],['JP','Japan'],['KR','S. Korea'],['IN','India'],
   ['ID','Indonesia'],['PH','Philippines'],['VN','Vietnam'],['TH','Thailand'],
   ['PK','Pakistan'],['SA','Saudi Arabia'],['AE','UAE'],['AU','Australia'],
+  // Africa
+  ['NG','Nigeria'],['ZA','S. Africa'],['EG','Egypt'],['KE','Kenya'],
+  ['ET','Ethiopia'],['GH','Ghana'],['TZ','Tanzania'],['MA','Morocco'],
+  ['DZ','Algeria'],['UG','Uganda'],['AO','Angola'],['MZ','Mozambique'],
+  ['CI','Ivory Coast'],['CM','Cameroon'],['SN','Senegal'],['ZW','Zimbabwe'],
 ];
 function getManualCountry(){
   try{ return localStorage.getItem("countryManual2248") || ""; }catch(e){ return ""; }
