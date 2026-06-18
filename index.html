@@ -17,11 +17,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg-top:#2a3caa;
-  --bg-t1:#22336c;   /* mix top/mid — set by applyTheme */
-  --bg-mid:#1a2a6e;
-  --bg-b1:#15215f;   /* mix mid/bot — set by applyTheme */
-  --bg-bot:#111850;
+  --bg-top:#243066;
+  --bg-t1:#1b2350;   /* mix top/mid — set by applyTheme */
+  --bg-mid:#161d44;
+  --bg-b1:#101637;   /* mix mid/bot — set by applyTheme */
+  --bg-bot:#0b0f2a;
   --gem:#c23bff;
   --crown:#f5a623;
   --btn-gold-top:#f5c842;
@@ -30,7 +30,13 @@
   --btn-journey-bot:#7a35aa;
   --txt:#ffffff;
   --cell-gap:8px;
-  --radius:14px;
+  --radius:16px;
+  /* refined glass surface system (chrome cards) */
+  --surface-top:#252d59;
+  --surface-bot:#161c3d;
+  --surface-border:rgba(150,170,255,0.16);
+  --surface-shadow:0 6px 18px rgba(0,0,12,0.45);
+  --txt-dim:#98a2d4;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
 html,body{height:100%;overflow:hidden;}
@@ -69,12 +75,14 @@ body{
   pointer-events:none;
 }
 .hex-bg::before{
-  display:none; /* the artwork carries its own hex pattern */
+  display:block;
   content:'';
-  position:absolute;inset:-20px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 0 L56 14 L56 42 L28 56 L0 42 L0 14 Z' fill='none' stroke='rgba(255,255,255,0.045)' stroke-width='1.5'/%3E%3Cpath d='M28 44 L56 58 L56 86 L28 100 L0 86 L0 58 Z' fill='none' stroke='rgba(255,255,255,0.045)' stroke-width='1.5'/%3E%3Cpath d='M-28 22 L0 36 L0 64 L-28 78 L-56 64 L-56 36 Z' fill='none' stroke='rgba(255,255,255,0.045)' stroke-width='1.5'/%3E%3Cpath d='M56 0 L84 14 L84 42 L56 56 L28 42 L28 14 Z' fill='none' stroke='rgba(255,255,255,0.045)' stroke-width='1.5'/%3E%3Cpath d='M56 44 L84 58 L84 86 L56 100 L28 86 L28 58 Z' fill='none' stroke='rgba(255,255,255,0.045)' stroke-width='1.5'/%3E%3C/svg%3E");
-  background-size: 56px 100px;
-  opacity:1;
+  position:absolute;inset:0;
+  /* premium depth: soft cool glow up top, rich vignette toward the edges */
+  background:
+    radial-gradient(120% 85% at 50% 30%, rgba(120,150,255,0.12) 0%, rgba(10,14,40,0) 45%),
+    radial-gradient(150% 130% at 50% 52%, rgba(6,8,24,0) 34%, rgba(4,6,20,0.66) 100%);
+  pointer-events:none;
 }
 
 /* ============ SCREEN WRAPPER ============ */
@@ -104,11 +112,11 @@ body{
 }
 .hud-gems{
   display:flex;align-items:center;gap:6px;
-  background:linear-gradient(180deg,#2a3280,#1b2060);
-  border:1.5px solid #3a4090;
-  border-radius:20px;padding:0 9px 0 38px;
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);
+  border-radius:14px;padding:0 10px 0 38px;
   height:40px;box-sizing:border-box;   /* locked: twin of .hud-crown */
-  box-shadow:0 2px 0 #080c28, 0 0 0 0.5px #4a50a0;
+  box-shadow:var(--surface-shadow), inset 0 1px 0 rgba(255,255,255,0.08);
   position:relative;   /* anchor for the oversized gem */
 }
 /* reference formatting: the gem is BIGGER than the pill and overflows
@@ -133,12 +141,12 @@ body{
 }
 .hud-crown{
   display:flex;align-items:center;gap:7px;
-  background:linear-gradient(180deg,#2a3280,#1b2060);
-  border:1.5px solid #3a4090;
-  border-radius:20px;padding:0 16px 0 50px;
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);
+  border-radius:14px;padding:0 16px 0 50px;
   height:40px;box-sizing:border-box;   /* locked: twin of .hud-gems */
   font-weight:800;font-size:18px;line-height:1;
-  box-shadow:0 2px 0 #080c28, 0 0 0 0.5px #4a50a0;
+  box-shadow:var(--surface-shadow), inset 0 1px 0 rgba(255,255,255,0.08);
   position:relative;
 }
 .crown-ico{
@@ -147,7 +155,11 @@ body{
   /* crown artwork centre ≈47.5% of its viewBox — nudge to optical centre */
   transform:translateY(-48%);
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));
+  animation:crownShine 3.6s ease-in-out infinite .4s;
 }
+.gem-svg{ animation:gemShine 3.6s ease-in-out infinite; }
+@keyframes gemShine{0%,100%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.5));}50%{filter:drop-shadow(0 3px 10px rgba(180,70,255,.55)) brightness(1.12);}}
+@keyframes crownShine{0%,100%{filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));}50%{filter:drop-shadow(0 2px 9px rgba(255,180,40,.5)) brightness(1.1);}}
 
 /* --- AD BUTTON (top left corner) --- */
 .ad-btn{
@@ -181,10 +193,10 @@ body{
   cursor:pointer;
 }
 .rewards-ico{
-  width:54px;height:54px;background:linear-gradient(180deg,#2a3280,#1b2060);
-  border:1.5px solid #3a4090;border-radius:14px;
+  width:52px;height:52px;background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);border-radius:15px;
   display:flex;align-items:center;justify-content:center;margin:0 auto 3px;
-  position:relative;box-shadow:0 3px 0 #080c28;
+  position:relative;box-shadow:var(--surface-shadow), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .rewards-dot{
   position:absolute;top:-5px;right:-5px;
@@ -197,7 +209,7 @@ body{
   50%    { transform:scale(1.3);  box-shadow:0 0 10px 4px rgba(255,60,60,0.0); }
 }
 .rewards-btn.has-reward .rewards-dot{ animation:rwDotPulse 1s ease-in-out infinite; }
-.rewards-label{font-size:10px;font-weight:800;letter-spacing:1px;color:#ccd;}
+.rewards-label{font-size:10px;font-weight:800;letter-spacing:1.5px;color:var(--txt-dim);text-transform:uppercase;}
 
 /* --- CENTER CONTENT --- */
 .home-center{
@@ -224,30 +236,37 @@ body{
 .highest-label-bar{ display:none; }
 .highest-bottom-cap{ display:none; }
 /* shield SVG handles everything */
-.shield-svg{ display:block; filter:drop-shadow(0 8px 24px rgba(0,0,40,0.7)); }
+.shield-svg{ display:block; filter:drop-shadow(0 14px 30px rgba(0,4,30,0.55)); animation:shieldFloat 4.6s ease-in-out infinite; }
+@keyframes shieldFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+@keyframes homeRise{from{transform:translateY(16px);}to{transform:translateY(0);}}
+#homeScreen .home-hud{animation:homeRise .5s cubic-bezier(.2,.8,.3,1) both .04s;}
+#homeScreen .highest-card{animation:homeRise .55s cubic-bezier(.2,.8,.3,1) both .15s;}
+#homeScreen .level-text{animation:homeRise .5s cubic-bezier(.2,.8,.3,1) both .27s;}
+#homeScreen .bottom-nav{animation:homeRise .5s cubic-bezier(.2,.8,.3,1) both .43s;}
 
 /* Level text */
 .level-text{
-  font-size:22px;font-weight:800;letter-spacing:3px;
-  color:#fff;text-shadow:0 2px 0 rgba(0,0,0,0.3);
-  margin-bottom:14px;
+  font-size:15px;font-weight:800;letter-spacing:4px;white-space:nowrap;
+  color:var(--txt-dim);text-transform:uppercase;
+  text-shadow:0 1px 2px rgba(0,0,0,0.4);
+  margin-bottom:18px;
 }
 
 /* PLAY Button — hero CTA: crown-gold gradient, light rim, animated
    shine sweep and a slow glow pulse to draw the eye */
 .play-btn{
   width:min(264px,78%);height:72px;border-radius:18px;
-  background:linear-gradient(180deg,#ffe06a 0%,#f5c33a 28%,#eda118 58%,#d07e0c 100%);
+  background:linear-gradient(180deg,#ffe9b0 0%,#f6cd66 30%,#e3a93f 62%,#c9851f 100%);
   border:none;color:#fff;
   font-family:'Baloo 2',sans-serif;
   font-size:32px;font-weight:900;letter-spacing:3px;
   cursor:pointer;position:relative;
   box-shadow:
-    0 6px 0 #8a4a00,
-    0 12px 24px rgba(0,0,0,0.45),
-    inset 0 2px 0 rgba(255,250,210,0.75),
-    inset 0 0 0 1.5px rgba(255,225,140,0.45),
-    inset 0 -4px 6px rgba(140,70,0,0.35);
+    0 5px 0 #97600f,
+    0 14px 28px rgba(0,0,0,0.42),
+    inset 0 2px 0 rgba(255,250,225,0.82),
+    inset 0 0 0 1px rgba(255,232,170,0.5),
+    inset 0 -4px 6px rgba(150,90,10,0.3);
   display:flex;align-items:center;justify-content:center;
   text-shadow:0 2px 3px rgba(100,40,0,0.5);
   transition:transform 0.08s, box-shadow 0.08s;
@@ -262,10 +281,10 @@ body{
 }
 /* shine sweep: a skewed light streak slides across every few seconds */
 .play-btn::after{
-  content:'';position:absolute;top:-20%;bottom:-20%;left:-30%;width:34%;
-  background:linear-gradient(100deg,transparent 8%,rgba(255,255,255,0.42) 50%,transparent 92%);
+  content:'';position:absolute;top:-20%;bottom:-20%;left:-30%;width:30%;
+  background:linear-gradient(100deg,transparent 8%,rgba(255,255,255,0.20) 50%,transparent 92%);
   transform:skewX(-18deg) translateX(-120%);
-  animation:btnShine 3.4s ease-in-out infinite;
+  animation:btnShine 6s ease-in-out infinite;
   pointer-events:none;
 }
 @keyframes btnShine{
@@ -273,8 +292,8 @@ body{
   78%, 100% { transform:skewX(-18deg) translateX(520%); }
 }
 @keyframes playGlow{
-  0%,100%{ filter:drop-shadow(0 0 0 rgba(255,190,40,0)); }
-  50%    { filter:drop-shadow(0 0 14px rgba(255,190,40,0.45)); }
+  0%,100%{ filter:drop-shadow(0 0 2px rgba(255,200,90,0.10)); }
+  50%    { filter:drop-shadow(0 0 16px rgba(255,200,90,0.40)); }
 }
 .play-btn:active{
   transform:translateY(4px);animation:none;
@@ -321,8 +340,9 @@ body{
 /* --- BOTTOM NAV (home) --- */
 .bottom-nav{
   display:flex;align-items:flex-end;justify-content:center;
-  background:linear-gradient(180deg,#1a1f48,#12163a);
-  border-top:1px solid rgba(255,255,255,0.07);
+  background:linear-gradient(180deg,rgba(22,28,58,0.92),rgba(11,14,34,0.96));
+  border-top:1px solid var(--surface-border);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   padding:8px 0 max(10px,env(safe-area-inset-bottom));
   gap:0;
   transition: none;
@@ -346,8 +366,8 @@ body{
   transition: background 0.15s;
 }
 .nav-item.active .nav-icon{
-  background:linear-gradient(180deg,#6a40c8,#4e28a0);
-  border-radius:12px;
+  background:linear-gradient(180deg,#8b5cf6,#6a3fd6);
+  border-radius:13px;box-shadow:0 4px 12px rgba(124,77,246,0.45),inset 0 1px 0 rgba(255,255,255,0.25);
 }
 /* highlighted state when modal open */
 .nav-item.modal-active .nav-icon{
@@ -355,14 +375,12 @@ body{
   border-radius:12px;
   box-shadow:0 0 14px rgba(155,62,221,0.55);
 }
-.nav-item.modal-active .nav-icon svg path,
-.nav-item.modal-active .nav-icon svg circle,
-.nav-item.modal-active .nav-icon svg rect,
-.nav-item.modal-active .nav-icon svg line{
-  stroke:#fff;fill:#fff;
+.nav-item.active .nav-icon svg,
+.nav-item.modal-active .nav-icon svg{
+  color:#fff;
 }
-.nav-icon svg{width:26px;height:26px;}
-.nav-label{font-size:10px;color:#8890cc;font-weight:700;}
+.nav-icon svg{width:26px;height:26px;color:#8b93c4;transition:color .15s;}
+.nav-label{font-size:10px;color:var(--txt-dim);font-weight:700;}
 .nav-item.active .nav-label{color:#fff;}
 .nav-item.modal-active .nav-label{color:#d34bff;}
 
@@ -495,13 +513,13 @@ body{
   display:flex;align-items:center;justify-content:center;
   font-weight:900;color:#fff;text-shadow:0 2px 3px rgba(0,0,0,.22);
   /* box-shadow is set per-tile in styleTile() with the tile's own hue */
-  transition:transform .16s cubic-bezier(.3,.8,.4,1), opacity .12s linear;
+  transition:transform .2s cubic-bezier(.2,.9,.35,1.1), opacity .12s linear;
   will-change:transform;backface-visibility:hidden;z-index:2;
 }
 .tile.sel{
-  filter:brightness(1.10) saturate(1.08);z-index:6;
+  filter:brightness(1.12) saturate(1.1) drop-shadow(0 0 10px rgba(255,255,255,0.55));z-index:6;
   /* white selection ring + soft glow (chain readability) */
-  outline:3px solid rgba(255,255,255,.92);
+  outline:3px solid rgba(255,255,255,.95);
   outline-offset:-1px;
   animation: none; /* reset so re-adding works */
 }
@@ -509,8 +527,8 @@ body{
 #sockets{position:absolute;inset:0;z-index:0;pointer-events:none;}
 .socket{
   position:absolute;border-radius:var(--radius);
-  background:rgba(255,255,255,0.035);
-  box-shadow:inset 0 2px 4px rgba(0,0,6,0.45), inset 0 -1px 0 rgba(255,255,255,0.05);
+  background:rgba(255,255,255,0.028);
+  box-shadow:inset 0 1px 2px rgba(0,0,8,0.4), inset 0 0 0 1px rgba(255,255,255,0.03);
 }
 /* Bounce animation when tile is touched / added to chain */
 @keyframes tileBounce {
@@ -525,10 +543,15 @@ body{
   animation: tileBounce 0.28s cubic-bezier(0.22,1,0.36,1) forwards;
 }
   box-shadow:inset 0 2px 0 rgba(255,255,255,.18);}
-.tile.pop{animation:pop .22s ease;}
+.tile.pop{animation:pop .3s cubic-bezier(.34,1.56,.5,1);}
 .tile.vanish{opacity:0;transform:scale(.3) translate(var(--tx),var(--ty));}
-@keyframes pop{0%{transform:scale(.2) translate(var(--tx),var(--ty));}70%{transform:scale(1.12) translate(var(--tx),var(--ty));}100%{transform:scale(1) translate(var(--tx),var(--ty));}}
+@keyframes pop{0%{transform:scale(.2) translate(var(--tx),var(--ty));filter:brightness(1.5);}55%{transform:scale(1.18) translate(var(--tx),var(--ty));filter:brightness(1.18);}80%{transform:scale(.95) translate(var(--tx),var(--ty));}100%{transform:scale(1) translate(var(--tx),var(--ty));filter:brightness(1);}}
 .tile .crowntile{position:absolute;top:-13%;left:50%;transform:translateX(-50%);width:36%;height:auto;}
+/* ── merge burst: particles + expanding ring (visual juice) ── */
+.merge-particle{position:absolute;z-index:7;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);box-shadow:0 0 6px rgba(255,255,255,0.55);animation:mergeBurst .5s ease-out forwards;}
+@keyframes mergeBurst{0%{transform:translate(-50%,-50%) scale(.45);opacity:1;}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.2);opacity:0;}}
+.merge-ring{position:absolute;z-index:6;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,0.75);animation:mergeRing .45s ease-out forwards;}
+@keyframes mergeRing{0%{width:12px;height:12px;opacity:.85;}100%{width:var(--rs);height:var(--rs);opacity:0;}}
 #link{position:absolute;inset:0;pointer-events:none;z-index:1;overflow:visible;}
 #preview{position:absolute;z-index:12;pointer-events:none;font-weight:800;font-size:20px;color:#fff;
   background:rgba(0,0,0,.55);border-radius:12px;padding:3px 12px;transform:translate(-50%,-150%);
@@ -561,7 +584,8 @@ body{
 
 /* Game overlays */
 .overlay{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(11,14,46,.55);backdrop-filter:blur(2px);text-align:center;}
+  background:rgba(11,14,46,.55);backdrop-filter:blur(2px);text-align:center;animation:overlayFade .24s ease;}
+@keyframes overlayFade{from{opacity:0;}to{opacity:1;}}
 .overlay.hidden{display:none;}
 .ov-goal{font-size:54px;font-weight:800;color:#ffd23d;text-shadow:0 4px 0 rgba(0,0,0,.35);letter-spacing:2px;}
 .ov-chip{width:120px;height:120px;border-radius:22px;background:#f24b5e;display:flex;align-items:center;justify-content:center;
@@ -614,16 +638,16 @@ body{
 .pause-modal{
   width: 88%;
   max-width: 360px;
-  background: linear-gradient(180deg,#1e2880 0%,#131a60 40%,#0e1450 100%);
+  background: linear-gradient(180deg,#1a2150 0%,#11163a 40%,#0a0d24 100%);
   border-radius: 22px;
-  border: 2px solid rgba(100,130,255,0.3);
-  box-shadow: 0 0 40px rgba(60,80,200,0.3), 0 20px 60px rgba(0,0,0,0.7);
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 0 40px rgba(40,60,160,0.22), 0 24px 60px rgba(0,0,0,0.7);
   overflow: hidden;
   animation: rwPop 0.25s cubic-bezier(0.22,1,0.36,1);
 }
 /* Header strip — same blue as shop header */
 .pause-header{
-  background: linear-gradient(180deg,#2535a8,#1a2490);
+  background: linear-gradient(180deg,#1c2450,#11163a);
   border-bottom: 1px solid rgba(255,255,255,0.1);
   padding: 16px 52px 14px;
   text-align: center;
@@ -690,8 +714,8 @@ body{
 
 /* Play button — golden orange */
 .pause-play{
-  background: linear-gradient(180deg,#f5c030,#e07010);
-  box-shadow: 0 5px 0 #804000, 0 8px 16px rgba(0,0,0,0.35);
+  background: linear-gradient(180deg,#f6cd66 0%,#e3a93f 55%,#c9851f 100%);
+  box-shadow: 0 5px 0 #97600f, 0 10px 18px rgba(0,0,0,0.35);
   font-size: 32px;
   font-weight: 900;
   color: #fff;
@@ -785,9 +809,10 @@ body{
 .combo-praise.t2{font-size:38px;color:#ffd23d;text-shadow:0 3px 0 #a86a00, 0 6px 20px rgba(255,200,40,.5);}
 .combo-praise.t3{font-size:42px;color:#ff8a3d;text-shadow:0 3px 0 #b04010, 0 7px 22px rgba(255,120,40,.55);}
 .combo-praise.t4{font-size:46px;color:#d34bff;text-shadow:0 3px 0 #6a10a0, 0 8px 26px rgba(200,70,255,.65);}
+.combo-praise::before{content:'';position:absolute;left:50%;top:50%;width:170px;height:170px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,currentColor 0%,transparent 62%);opacity:.22;filter:blur(10px);z-index:-1;pointer-events:none;}
 @keyframes praisePop{
   0%  { transform:translate(-50%,-50%) scale(.25) rotate(-7deg); opacity:0; }
-  18% { transform:translate(-50%,-50%) scale(1.18) rotate(2deg); opacity:1; }
+  18% { transform:translate(-50%,-50%) scale(1.26) rotate(2deg); opacity:1; }
   30% { transform:translate(-50%,-50%) scale(1) rotate(0deg); }
   72% { transform:translate(-50%,-50%) scale(1); opacity:1; }
   100%{ transform:translate(-50%,-86%) scale(.92); opacity:0; }
@@ -866,7 +891,7 @@ body{
 #avModal.open, #countryModal.open{display:flex;}
 .ctry-card{
   width:min(92vw,380px);max-height:86dvh;overflow-y:auto;
-  background:#13235e;border-radius:20px;
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));border-radius:20px;
   box-shadow:0 16px 50px rgba(0,0,0,0.6);
   animation:duIn .3s cubic-bezier(.2,1.4,.4,1);
 }
@@ -891,7 +916,7 @@ body{
 }
 .av-card{
   width:min(90vw,360px);max-height:86dvh;overflow-y:auto;
-  background:#13235e;border-radius:20px;
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));border-radius:20px;
   box-shadow:0 16px 50px rgba(0,0,0,0.6);
   animation:duIn .3s cubic-bezier(.2,1.4,.4,1);
 }
@@ -938,7 +963,7 @@ body{
 #duModal.hidden, #shuffleModal.hidden{display:none;}
 .du-card{
   width:min(88vw,350px);
-  background:#13235e;
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
   border-radius:20px;overflow:hidden;
   box-shadow:0 16px 50px rgba(0,0,0,0.6);
   animation:duIn .3s cubic-bezier(.2,1.4,.4,1);
@@ -1038,7 +1063,7 @@ body{
 .shop-sheet{
   width:100%;
   height:100dvh;
-  background:linear-gradient(180deg,#1e2880 0%,#131a60 30%,#0e1450 100%);
+  background:linear-gradient(180deg,#1a2150 0%,#11163a 38%,#0a0d24 100%);
   border-radius:0;
   overflow:hidden;
   display:flex;flex-direction:column;
@@ -1051,8 +1076,8 @@ body{
 /* Shop Header */
 .shop-header{
   position:relative;
-  background:linear-gradient(180deg,#1e2880,#131a60);
-  border-bottom:1px solid rgba(255,255,255,0.08);
+  background:linear-gradient(180deg,#1c2450,#11163a);
+  border-bottom:1px solid var(--surface-border);
   padding:14px 16px 0;
   display:flex;align-items:center;justify-content:center;
   flex-direction:column;
@@ -1060,11 +1085,11 @@ body{
 }
 .shop-back{
   position:absolute;left:12px;top:14px;
-  width:36px;height:36px;border-radius:10px;
-  background:linear-gradient(180deg,#20255e,#171b48);
-  border:1.5px solid #343a7e;
+  width:36px;height:36px;border-radius:11px;
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);
   display:flex;align-items:center;justify-content:center;
-  cursor:pointer;box-shadow:0 3px 0 #0c0e2a;
+  cursor:pointer;box-shadow:var(--surface-shadow), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .shop-offers-btn{
   position:absolute;right:12px;top:10px;
@@ -1083,27 +1108,27 @@ body{
   box-shadow:0 2px 4px rgba(0,0,0,0.4);
 }
 .shop-offers-label{
-  font-size:11px;font-weight:800;letter-spacing:1.5px;color:#ffd23d;
+  font-size:11px;font-weight:800;letter-spacing:1.5px;color:#f6cd66;
   text-shadow:0 1px 3px rgba(0,0,0,0.5);
   margin-top:2px;
 }
 .shop-title{
-  font-size:36px;font-weight:900;letter-spacing:3px;color:#fff;
-  text-shadow:0 2px 0 rgba(0,0,0,0.3);
-  display:flex;align-items:center;gap:8px;
+  font-size:30px;font-weight:900;letter-spacing:5px;color:#fff;
+  text-shadow:0 2px 6px rgba(0,0,0,0.4);
+  display:flex;align-items:center;gap:10px;
 }
 .shop-subtitle{
-  font-size:13px;font-weight:700;color:#a0aadd;
+  font-size:13px;font-weight:700;color:var(--txt-dim);
   margin-bottom:12px;
 }
 /* Gems in header */
 .shop-gems-hud{
   position:absolute;left:56px;top:16px;
   display:flex;align-items:center;gap:5px;
-  background:linear-gradient(180deg,#2a3280,#1b2060);
-  border:1.5px solid #3a4090;
-  border-radius:20px;padding:4px 8px 4px 6px;
-  box-shadow:0 2px 0 #080c28;
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);
+  border-radius:14px;padding:4px 8px 4px 6px;
+  box-shadow:var(--surface-shadow), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .shop-gems-hud b{font-size:15px;font-weight:800;}
 .shop-plus{
@@ -1130,12 +1155,13 @@ body{
 
 /* Each shop row */
 .shop-row{
-  background:linear-gradient(180deg,#1e2460,#161c50);
-  border:1px solid rgba(255,255,255,0.08);
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);
   border-radius:16px;
-  padding:12px 14px;
+  padding:13px 14px;
   display:flex;align-items:center;gap:12px;
   position:relative;overflow:hidden;
+  box-shadow:var(--surface-shadow);
 }
 .shop-row::before{
   content:'';position:absolute;top:0;left:0;right:0;height:1px;
@@ -1147,7 +1173,7 @@ body{
 }
 .shop-row-info{flex:1;min-width:0;}
 .shop-row-name{font-size:15px;font-weight:800;color:#fff;letter-spacing:0.5px;}
-.shop-row-desc{font-size:12px;color:#8899cc;font-weight:600;margin-top:2px;}
+.shop-row-desc{font-size:12px;color:var(--txt-dim);font-weight:600;margin-top:2px;}
 .shop-row-amount{
   display:flex;align-items:center;gap:5px;
   font-size:15px;font-weight:800;color:#fff;margin-top:4px;
@@ -1155,10 +1181,10 @@ body{
 .shop-buy-btn{
   flex:none;
   min-width:96px;height:42px;border-radius:12px;border:none;
-  background:linear-gradient(180deg,#9b3edd,#7825bf);
+  background:linear-gradient(180deg,#8b5cf6,#6a3fd6);
   color:#fff;font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:800;
   cursor:pointer;
-  box-shadow:0 4px 0 #4a1080, 0 6px 12px rgba(0,0,0,0.3);
+  box-shadow:0 4px 0 #3f1d8c, 0 6px 14px rgba(0,0,0,0.32);
   display:flex;align-items:center;justify-content:center;
   position:relative;overflow:hidden;
   transition:transform 0.08s, box-shadow 0.08s;
@@ -1169,10 +1195,10 @@ body{
   background:linear-gradient(180deg,rgba(255,255,255,0.22),transparent);
   border-radius:12px 12px 0 0;
 }
-.shop-buy-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #4a1080;}
+.shop-buy-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #3f1d8c;}
 .shop-buy-btn.free{
-  background:linear-gradient(180deg,#1e70e0,#1456c0);
-  box-shadow:0 4px 0 #0a2d6e, 0 6px 12px rgba(0,0,0,0.3);
+  background:linear-gradient(180deg,#3b82f6,#2563d8);
+  box-shadow:0 4px 0 #15397e, 0 6px 14px rgba(0,0,0,0.3);
   gap:6px;
 }
 .shop-buy-btn.free::before{
@@ -1180,7 +1206,26 @@ body{
   border-radius:12px 12px 0 0;
 }
 .shop-buy-btn.remove-ads{
-  background:linear-gradient(180deg,#9b3edd,#7825bf);
+  background:linear-gradient(180deg,#8b5cf6,#6a3fd6);
+}
+/* ── shop polish: row stagger, best-value badge, tap feedback ── */
+@keyframes shopRowIn{from{transform:translateY(14px);}to{transform:translateY(0);}}
+.shop-row{animation:shopRowIn .42s cubic-bezier(.2,.8,.3,1) both;}
+.shop-row:nth-child(1){animation-delay:.04s;}
+.shop-row:nth-child(2){animation-delay:.10s;}
+.shop-row:nth-child(3){animation-delay:.16s;}
+.shop-row:nth-child(4){animation-delay:.22s;}
+.shop-row:nth-child(5){animation-delay:.28s;}
+.shop-row:nth-child(6){animation-delay:.34s;}
+.shop-row.best{border-color:rgba(246,205,102,0.5);box-shadow:var(--surface-shadow),0 0 0 1px rgba(246,205,102,0.28),0 0 18px rgba(246,205,102,0.12);}
+.shop-best{position:absolute;top:0;right:0;background:linear-gradient(180deg,#f6cd66,#e0a23a);color:#3a2400;font-size:9px;font-weight:900;letter-spacing:1px;padding:3px 11px;border-radius:0 16px 0 12px;box-shadow:0 2px 6px rgba(0,0,0,0.3);z-index:2;}
+.plus-btn:active,.shop-plus:active{transform:scale(.9);}
+.nav-icon{transition:background .15s, transform .12s;}
+.nav-item:active .nav-icon{transform:scale(.9);}
+.rewards-ico{transition:transform .12s;}
+.rewards-btn:active .rewards-ico{transform:scale(.93);}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;}
 }
 
 /* ================================================================
@@ -1209,11 +1254,11 @@ body{
 .rw-close{
   position:absolute;top:14px;right:14px;
   width:36px;height:36px;border-radius:50%;
-  background:linear-gradient(180deg,#2a3280,#1b2060);
-  border:2px solid #3a4090;
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;color:#fff;font-size:16px;font-weight:900;
-  box-shadow:0 3px 0 #080c28;z-index:5;
+  box-shadow:var(--surface-shadow), inset 0 1px 0 rgba(255,255,255,0.08);z-index:5;
   line-height:1;
 }
 
@@ -1303,8 +1348,8 @@ body{
 
 /* Card de dia — igual ao shop-row mas vertical */
 .rw-day-card{
-  background:linear-gradient(180deg,#1e2460,#161c50);
-  border:1px solid rgba(255,255,255,0.08);
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);
   border-radius:16px;
   padding:11px 6px 10px;
   display:flex;flex-direction:column;align-items:center;gap:5px;
@@ -1330,8 +1375,8 @@ body{
 
 /* Card DAY 7 — largura total, estilo shop-row */
 .rw-day7{
-  background:linear-gradient(180deg,#1e2460,#161c50);
-  border:1px solid rgba(255,255,255,0.08);
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);
   border-radius:16px;
   padding:14px 20px;
   display:flex;align-items:center;gap:0;
@@ -1443,8 +1488,8 @@ body{
 
 /* Blocks section */
 .prof-blocks-section{
-  background:linear-gradient(180deg,#1e2460,#161c50);
-  border:1px solid rgba(255,255,255,0.08);
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);
   border-radius:16px;padding:14px;
   position:relative;overflow:hidden;
 }
@@ -1509,10 +1554,10 @@ body{
 }
 .journey-level-pill{
   position:absolute;right:12px;top:50%;transform:translateY(-50%);
-  background:linear-gradient(180deg,#2a3280,#1b2060);
-  border:1.5px solid #3a4090;border-radius:20px;
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);border-radius:20px;
   padding:4px 10px;font-size:13px;font-weight:800;
-  box-shadow:0 2px 0 #080c28;
+  box-shadow:var(--surface-shadow);
   white-space:nowrap;
 }
 
@@ -1745,8 +1790,8 @@ body{
 
 /* Row */
 .lb-row{
-  background:linear-gradient(180deg,#1e2460,#161c50);
-  border:1px solid rgba(255,255,255,0.07);
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);
   border-radius:14px;
   display:flex;align-items:center;
   padding:10px 12px;gap:10px;
@@ -1774,8 +1819,8 @@ body{
 
 .lb-avatar{
   width:44px;height:44px;border-radius:10px;flex:none;
-  background:linear-gradient(180deg,#2a3280,#1b2060);
-  border:1.5px solid #3a4090;
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);
   display:flex;align-items:center;justify-content:center;
   overflow:hidden;
 }
@@ -1830,8 +1875,8 @@ body{
 }
 .lb-cs-icon{
   width:90px;height:90px;border-radius:24px;
-  background:linear-gradient(180deg,#2a3280,#1b2060);
-  border:1.5px solid #3a4090;
+  background:linear-gradient(180deg,var(--surface-top),var(--surface-bot));
+  border:1px solid var(--surface-border);
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 6px 0 #080c28;
 }
@@ -1856,7 +1901,7 @@ body{
   background:rgba(2,6,23,.72);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s;}
 #levelUpModal.show{opacity:1;pointer-events:auto;}
 .lu-card{width:min(86vw,360px);border-radius:18px;overflow:hidden;
-  background:#101a35;border:1px solid rgba(120,150,220,.25);
+  background:#101a35;border:1px solid var(--surface-border);
   box-shadow:0 24px 60px rgba(0,0,0,.6);
   transform:translateY(26px) scale(.96);transition:transform .28s cubic-bezier(.2,.9,.25,1.2);}
 #levelUpModal.show .lu-card{transform:translateY(0) scale(1);}
@@ -2312,7 +2357,7 @@ body{
   border-radius:clamp(12px,3.5vw,16px);
   display:flex;align-items:center;justify-content:center;
   font-size:clamp(22px,6.5vw,28px);font-weight:900;color:#fff;
-  background:linear-gradient(180deg,#4a55cc,#2a35aa);
+  background:linear-gradient(180deg,#4d7fe0,#2f5dc8);
   box-shadow:0 5px 0 rgba(0,0,0,0.4), 0 0 24px rgba(100,120,255,0.5);
   position:relative;
   animation:resultPop 2.4s ease-in-out infinite;
@@ -2343,12 +2388,12 @@ body{
   width:100%;max-width:340px;
   height:22px;border-radius:11px;
   background:rgba(255,255,255,0.06);
-  border:1.5px solid rgba(120,80,255,0.4);
+  border:1px solid rgba(139,92,246,0.4);
   overflow:hidden;position:relative;
 }
 .splash-bar-fill{
   height:100%;border-radius:11px;
-  background:linear-gradient(90deg,#7a40ff,#9f60ff);
+  background:linear-gradient(90deg,#8b5cf6,#a78bfa);
   width:0%;
   transition:width 0.1s linear;
   position:relative;overflow:hidden;
@@ -2381,7 +2426,7 @@ body{
 .splash-tip{
   width:100%;max-width:340px;
   background:rgba(255,255,255,0.04);
-  border:1.5px solid rgba(140,80,255,0.4);
+  border:1px solid var(--surface-border);
   border-radius:14px;
   padding:12px 14px;
   display:flex;align-items:center;gap:12px;
@@ -2696,9 +2741,9 @@ body{
             <defs>
               <!-- Blue card gradient — bright royal blue center → darker edges -->
               <linearGradient id="hbCardG" x1="30%" y1="0%" x2="70%" y2="100%">
-                <stop offset="0%"   stop-color="#3a7fff"/>
-                <stop offset="55%"  stop-color="#1a5de8"/>
-                <stop offset="100%" stop-color="#0e3ab0"/>
+                <stop offset="0%"   stop-color="#3168d8"/>
+                <stop offset="55%"  stop-color="#173fad"/>
+                <stop offset="100%" stop-color="#0a2472"/>
               </linearGradient>
               <!-- Card top-left radial highlight (bright inner glow) -->
               <radialGradient id="hbCardGlow" cx="35%" cy="22%" r="55%">
@@ -2709,6 +2754,11 @@ body{
               <linearGradient id="hbLabelG" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%"   stop-color="rgba(10,40,160,0.82)"/>
                 <stop offset="100%" stop-color="rgba(5,20,100,0.95)"/>
+              </linearGradient>
+              <linearGradient id="hbNumG" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="60%" stop-color="#eaf2ff"/>
+                <stop offset="100%" stop-color="#c4d6ff"/>
               </linearGradient>
               <!-- Number: pure white with blue-grey shadow underneath -->
               <filter id="hbNumShadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -2934,7 +2984,7 @@ body{
                   dominant-baseline="central"
                   font-family="'Baloo 2',Arial,sans-serif"
                   font-size="140" font-weight="900"
-                  fill="#ffffff"
+                  fill="url(#hbNumG)"
                   filter="url(#hbNumShadow)"
                   paint-order="stroke fill"
                   stroke="rgba(20,60,200,0.35)"
@@ -2971,10 +3021,9 @@ body{
         <!-- Cart -->
         <div class="nav-icon">
           <svg viewBox="0 0 32 32" fill="none">
-            <path d="M4 5 h4 l3 15 h13 l3-10 H10" stroke="#7888bb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-            <circle cx="13" cy="25" r="2.4" fill="#7888bb"/>
-            <circle cx="22" cy="25" r="2.4" fill="#7888bb"/>
-            <line x1="8" y1="11" x2="23" y2="11" stroke="#7888bb" stroke-width="1.5"/>
+            <path d="M5 6 H8 L10.5 18 H22 L24 9 H10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12.5" cy="24" r="1.9" fill="currentColor"/>
+            <circle cx="21" cy="24" r="1.9" fill="currentColor"/>
           </svg>
         </div>
       </div>
@@ -2982,10 +3031,9 @@ body{
         <!-- Trophy -->
         <div class="nav-icon">
           <svg viewBox="0 0 32 32" fill="none">
-            <path d="M9 4 h14 v10 a7 7 0 0 1-14 0 Z" fill="#7888bb"/>
-            <path d="M5 7 h4 M23 7 h4 M5 7 c0 5 3 8 4 9 M27 7 c0 5-3 8-4 9" stroke="#7888bb" stroke-width="2" stroke-linecap="round"/>
-            <rect x="13" y="20" width="6" height="5" fill="#7888bb"/>
-            <rect x="9" y="25" width="14" height="3" rx="1.5" fill="#7888bb"/>
+            <path d="M10 5 H22 V11 A6 6 0 0 1 10 11 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M10 7 H6 V9 C6 12 8 13.5 10.5 13.5 M22 7 H26 V9 C26 12 24 13.5 21.5 13.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 16.5 V21 M12 26 H20 M13 26 C13 22.5 19 22.5 19 26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
       </div>
@@ -2993,9 +3041,9 @@ body{
         <!-- Home -->
         <div class="nav-icon">
           <svg viewBox="0 0 32 32" fill="none">
-            <path d="M5 15 L16 5 L27 15" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-            <rect x="9" y="15" width="14" height="12" rx="2" fill="#fff"/>
-            <rect x="13" y="20" width="6" height="7" rx="1" fill="#6040c0"/>
+            <path d="M5 15 L16 6 L27 15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 13 V25 H24 V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M13 25 V19 H19 V25" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
       </div>
@@ -3003,16 +3051,15 @@ body{
         <!-- Person -->
         <div class="nav-icon">
           <svg viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="11" r="5.5" fill="#7888bb"/>
-            <path d="M5 27 c0-6 4.5-10 11-10 s11 4 11 10" fill="#7888bb"/>
+            <circle cx="16" cy="11" r="4.6" fill="none" stroke="currentColor" stroke-width="2.2"/>
+            <path d="M7 26 C7 20.5 11 18 16 18 C21 18 25 20.5 25 26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
           </svg>
         </div>
       </div>
       <div class="nav-item" id="settingsNavBtn">
         <!-- Settings -->
         <div class="nav-icon">
-          <svg viewBox="0 0 32 32" fill="#7888bb">
-            <!-- 8 teeth + donut ring, every shape centred on (16,16) -->
+          <svg viewBox="0 0 32 32" fill="currentColor">
             <rect x="14.2" y="3.2" width="3.6" height="6.2" rx="1.5" transform="rotate(0 16 16)"/>
             <rect x="14.2" y="3.2" width="3.6" height="6.2" rx="1.5" transform="rotate(45 16 16)"/>
             <rect x="14.2" y="3.2" width="3.6" height="6.2" rx="1.5" transform="rotate(90 16 16)"/>
@@ -3179,11 +3226,6 @@ body{
     <div class="shop-sheet">
       <!-- Header -->
       <div class="shop-header">
-        <!-- Sparkles -->
-        <span class="shop-sparkle" style="left:60px;top:18px;">✦</span>
-        <span class="shop-sparkle" style="left:80px;top:8px;">✦</span>
-        <span class="shop-sparkle" style="right:95px;top:22px;">✦</span>
-
         <!-- Back button -->
         <div class="shop-back" id="shopBack">
           <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
@@ -3239,9 +3281,7 @@ body{
         </div>
 
         <!-- Title -->
-        <div class="shop-title">
-          <span>✦</span> SHOP <span>✦</span>
-        </div>
+        <div class="shop-title">SHOP</div>
         <div class="shop-subtitle">Buy and evolve faster!</div>
       </div>
 
@@ -3292,7 +3332,8 @@ body{
         </div>
 
         <!-- 1100 gems -->
-        <div class="shop-row">
+        <div class="shop-row best">
+          <div class="shop-best">BEST VALUE</div>
 <div class="shop-row-icon">
             <svg viewBox="0 0 64 64" width="64" height="64" style="filter:drop-shadow(0 4px 8px rgba(150,0,255,.5));"><ellipse cx="32" cy="58" rx="26" ry="7.280000000000001" fill="rgba(0,0,8,0.35)"/><g transform="translate(16,38) rotate(-14) scale(0.78) translate(-20,-25)"><path d="M9 9 H31 L38 17 L20 42 L2 17 Z" fill="#2a004a"/><polygon points="2,17 38,17 20,42" fill="#b32fe0"/><polygon points="2,17 20,17 20,42" fill="#d34bff"/><polygon points="38,17 20,17 20,42" fill="#8010b0"/><polygon points="9,9 2,17 13,17" fill="#9a20c0"/><polygon points="31,9 38,17 27,17" fill="#9a20c0"/><polygon points="9,9 31,9 27,17 13,17" fill="#f0aaff"/><polygon points="11,10.5 18,10.5 15.5,15 12.5,15" fill="#ffffff" opacity=".65"/><path d="M9 9 H31 L38 17 L20 42 L2 17 Z" fill="none" stroke="#1a0030" stroke-width="2" stroke-linejoin="round"/></g><g transform="translate(48,38) rotate(14) scale(0.78) translate(-20,-25)"><path d="M9 9 H31 L38 17 L20 42 L2 17 Z" fill="#2a004a"/><polygon points="2,17 38,17 20,42" fill="#b32fe0"/><polygon points="2,17 20,17 20,42" fill="#d34bff"/><polygon points="38,17 20,17 20,42" fill="#8010b0"/><polygon points="9,9 2,17 13,17" fill="#9a20c0"/><polygon points="31,9 38,17 27,17" fill="#9a20c0"/><polygon points="9,9 31,9 27,17 13,17" fill="#f0aaff"/><polygon points="11,10.5 18,10.5 15.5,15 12.5,15" fill="#ffffff" opacity=".65"/><path d="M9 9 H31 L38 17 L20 42 L2 17 Z" fill="none" stroke="#1a0030" stroke-width="2" stroke-linejoin="round"/></g><g transform="translate(26,27) rotate(-5) scale(0.88) translate(-20,-25)"><path d="M9 9 H31 L38 17 L20 42 L2 17 Z" fill="#2a004a"/><polygon points="2,17 38,17 20,42" fill="#b32fe0"/><polygon points="2,17 20,17 20,42" fill="#d34bff"/><polygon points="38,17 20,17 20,42" fill="#8010b0"/><polygon points="9,9 2,17 13,17" fill="#9a20c0"/><polygon points="31,9 38,17 27,17" fill="#9a20c0"/><polygon points="9,9 31,9 27,17 13,17" fill="#f0aaff"/><polygon points="11,10.5 18,10.5 15.5,15 12.5,15" fill="#ffffff" opacity=".65"/><path d="M9 9 H31 L38 17 L20 42 L2 17 Z" fill="none" stroke="#1a0030" stroke-width="2" stroke-linejoin="round"/></g><g transform="translate(40,29) rotate(8) scale(0.8) translate(-20,-25)"><path d="M9 9 H31 L38 17 L20 42 L2 17 Z" fill="#2a004a"/><polygon points="2,17 38,17 20,42" fill="#b32fe0"/><polygon points="2,17 20,17 20,42" fill="#d34bff"/><polygon points="38,17 20,17 20,42" fill="#8010b0"/><polygon points="9,9 2,17 13,17" fill="#9a20c0"/><polygon points="31,9 38,17 27,17" fill="#9a20c0"/><polygon points="9,9 31,9 27,17 13,17" fill="#f0aaff"/><polygon points="11,10.5 18,10.5 15.5,15 12.5,15" fill="#ffffff" opacity=".65"/><path d="M9 9 H31 L38 17 L20 42 L2 17 Z" fill="none" stroke="#1a0030" stroke-width="2" stroke-linejoin="round"/></g><path d="M54 8 l1.2 2.8 2.8 1.2 -2.8 1.2 -1.2 2.8 -1.2 -2.8 -2.8 -1.2 2.8 -1.2z" fill="#fff" opacity="0.9"/><path d="M9 17 l0.8999999999999999 2.0999999999999996 2.0999999999999996 0.8999999999999999 -2.0999999999999996 0.8999999999999999 -0.8999999999999999 2.0999999999999996 -0.8999999999999999 -2.0999999999999996 -2.0999999999999996 -0.8999999999999999 2.0999999999999996 -0.8999999999999999z" fill="#fff" opacity="0.85"/><path d="M32 52.8 l0.66 1.54 1.54 0.66 -1.54 0.66 -0.66 1.54 -0.66 -1.54 -1.54 -0.66 1.54 -0.66z" fill="#fff" opacity="0.6"/><path d="M58 31.6 l0.72 1.68 1.68 0.72 -1.68 0.72 -0.72 1.68 -0.72 -1.68 -1.68 -0.72 1.68 -0.72z" fill="#fff" opacity="0.7"/></svg>
           </div>
@@ -4087,19 +4128,19 @@ function diffProgress(){   // 0..1 across the ramp for the current level
   return Math.max(0, Math.min(1, t));
 }
 const COLORS = {
-  2:        "#1a8fd1",   // deep blue
-  4:        "#d4780a",   // deep orange
-  8:        "#d42060",   // deep pink/red
-  16:       "#8b2a6a",   // deep magenta
-  32:       "#922038",   // deep crimson
-  64:       "#6a3dbf",   // deep purple
-  128:      "#1a7fa8",   // deep teal-blue
-  256:      "#0d9e6e",   // deep emerald
-  512:      "#d94f3a",   // deep tomato
-  1024:     "#5fa010",   // deep lime-green
-  2048:     "#d91040",   // deep red
-  4096:     "#1a50d4",   // royal blue
-  8192:     "#c87800",   // deep amber
+  2:        "#3b8ed6",   // azure
+  4:        "#e89a2c",   // amber
+  8:        "#e24d6b",   // rose
+  16:       "#c44fb0",   // orchid
+  32:       "#9a4dd6",   // violet
+  64:       "#6a5ae0",   // indigo
+  128:      "#28a0c8",   // teal
+  256:      "#1eb585",   // emerald
+  512:      "#ef6b43",   // coral
+  1024:     "#8cbf2e",   // lime
+  2048:     "#ef3a63",   // crimson
+  4096:     "#2f6df0",   // royal blue
+  8192:     "#f0a324",   // gold-amber
   16384:    "#3a6888",   // deep slate-blue
   32768:    "#8c1a50",   // deep rose
   65536:    "#8a6e18",   // deep gold
@@ -4359,12 +4400,13 @@ function styleTile(obj){
   el.style.background =
     "linear-gradient(180deg,"+lighten(base,30)+" 0%,"+lighten(base,10)+" 38%,"+base+" 72%,"+darken(base,12)+" 100%)";
   // 3D edge in the tile's OWN hue (like the original) + soft drop shadow
-  const edge = Math.max(3, Math.round(cell*0.07));
+  const edge = Math.max(3, Math.round(cell*0.06));
   el.style.boxShadow =
-    "0 "+edge+"px 0 "+darken(base,52)+
-    ", 0 "+(edge+4)+"px 8px rgba(0,0,10,0.35)"+
-    ", inset 0 2px 0 rgba(255,255,255,0.30)"+
-    ", inset 0 -2px 0 rgba(0,0,0,0.12)";
+    "0 "+edge+"px 0 "+darken(base,46)+
+    ", 0 "+(edge+5)+"px 12px rgba(0,0,12,0.38)"+
+    ", inset 0 2px 0 rgba(255,255,255,0.32)"+
+    ", inset 0 0 0 1px rgba(255,255,255,0.10)"+
+    ", inset 0 -3px 4px rgba(0,0,0,0.14)";
   const light = isLightColor(base);
   el.style.color = light ? "#33333f" : "#ffffff";
   el.style.textShadow = light ? "0 1px 1px rgba(255,255,255,0.45)" : "0 2px 3px rgba(0,0,0,0.28)";
@@ -5072,6 +5114,37 @@ function showComboPraise(chainLen){
   }
 }
 
+// ── Merge burst: gem-coloured particles + ring (visual only) ──
+function burstParticles(obj, color){
+  if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cx = centerX(obj.col), cy = centerY(obj.row);
+  // expanding ring
+  const ring = document.createElement("div");
+  ring.className = "merge-ring";
+  ring.style.left = cx+"px"; ring.style.top = cy+"px";
+  ring.style.borderColor = lighten(color, 40);
+  ring.style.setProperty("--rs", Math.round(cell*1.5)+"px");
+  tilesLayer.appendChild(ring);
+  setTimeout(()=>ring.remove(), 520);
+  // particles
+  const n = 8;
+  for(let i=0;i<n;i++){
+    const p = document.createElement("div");
+    p.className = "merge-particle";
+    const ang = (Math.PI*2*i)/n + Math.random()*0.7;
+    const dist = cell*0.55 + Math.random()*cell*0.4;
+    const sz = Math.max(5, Math.round(cell*0.13)) - Math.floor(Math.random()*3);
+    p.style.left = cx+"px"; p.style.top = cy+"px";
+    p.style.width = p.style.height = sz+"px";
+    p.style.background = lighten(color, 28);
+    p.style.setProperty("--dx", (Math.cos(ang)*dist).toFixed(1)+"px");
+    p.style.setProperty("--dy", (Math.sin(ang)*dist).toFixed(1)+"px");
+    p.style.animationDelay = Math.round(Math.random()*40)+"ms";
+    tilesLayer.appendChild(p);
+    setTimeout(()=>p.remove(), 620);
+  }
+}
+
 function resolveMerge(used, res){
   busy = true;
   showComboPraise(used.length);
@@ -5095,6 +5168,7 @@ function resolveMerge(used, res){
   head.value = res.result;
   styleTile(head);
   head.el.classList.remove("pop"); void head.el.offsetWidth; head.el.classList.add("pop");
+  burstParticles(head, colorFor(res.result));
   score += res.result;
   bumpBestScore();                     // keep all-time best score in sync
   if(res.result>=128){ gems += 1; gemSound(0.12); }
@@ -5832,55 +5906,72 @@ let musicVol = 50;
 try{ const v = parseInt(localStorage.getItem("musicVol2248") || "50", 10);
      if(!isNaN(v)) musicVol = Math.max(0, Math.min(100, v)); }catch(e){}
 
-let musicTimer = null, musicGain = null, musicStep = 0;
-const MUSIC_SEQ  = [0, 3, 7, 10, 12, 10, 7, 5, 3, 7, 0, -2];  // dreamy minor walk
-const MUSIC_BASE = 196;                                        // G3
+let musicTimer = null, musicGain = null, musicStep = 0, musicNoiseBuf = null;
+// Upbeat loop: bouncy major-pentatonic lead + walking bass + soft hat.
+// 16 eighth-notes per bar. Semitones relative to each base note.
+const LEAD_SEQ = [ 0,  7, 12,  7,   9,  7,  4,  0,   2,  9,  7,  5,   4,  7, 12, 14];
+const BASS_SEQ = [ 0,  0,  0,  7,   5,  5,  0,  0,  -3, -3,  5,  5,   0,  0,  7, -5];
+const HAT_ON   = [ 0,  1,  0,  1,   0,  1,  0,  1,   0,  1,  0,  1,   0,  1,  0,  1];
+const MUSIC_BASE = 330;    // E4 lead
+const BASS_BASE  = 82.41;  // E2
 
 function musicEnsure(){
   const ctx = actx(); if(!ctx) return null;
   if(!musicGain){
     musicGain = ctx.createGain();
-    musicGain.gain.value = (musicVol / 100) * 0.15;
+    musicGain.gain.value = (musicVol / 100) * 0.13;
     musicGain.connect(ctx.destination);
   }
   return ctx;
 }
+function musicNote(ctx, freq, t, dur, type, peak){
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(peak, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(musicGain);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+function musicHat(ctx, t){
+  if(!musicNoiseBuf){
+    musicNoiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.2), ctx.sampleRate);
+    const d = musicNoiseBuf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+  }
+  const src = ctx.createBufferSource(); src.buffer = musicNoiseBuf;
+  const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 7000;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.16, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+  src.connect(hp); hp.connect(g); g.connect(musicGain);
+  src.start(t); src.stop(t + 0.06);
+}
 function musicTick(){
   if(!musicOn) return;
   const ctx = musicEnsure(); if(!ctx) return;
-  const t  = ctx.currentTime;
-  const st = MUSIC_SEQ[musicStep % MUSIC_SEQ.length];
-  // soft pad note
-  const o = ctx.createOscillator(), g = ctx.createGain();
-  o.type = "sine";
-  o.frequency.value = MUSIC_BASE * Math.pow(2, st / 12);
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(1, t + 0.45);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.9);
-  o.connect(g); g.connect(musicGain);
-  o.start(t); o.stop(t + 2.1);
-  // low root drone every 4 steps
-  if(musicStep % 4 === 0){
-    const o2 = ctx.createOscillator(), g2 = ctx.createGain();
-    o2.type = "triangle";
-    o2.frequency.value = MUSIC_BASE / 2;
-    g2.gain.setValueAtTime(0.0001, t);
-    g2.gain.linearRampToValueAtTime(0.45, t + 0.7);
-    g2.gain.exponentialRampToValueAtTime(0.0001, t + 3.6);
-    o2.connect(g2); g2.connect(musicGain);
-    o2.start(t); o2.stop(t + 3.8);
-  }
+  const t = ctx.currentTime + 0.03;
+  const i = musicStep % 16;
+  // lead (triangle) + faint sine-octave sparkle
+  const ls = LEAD_SEQ[i];
+  musicNote(ctx, MUSIC_BASE * Math.pow(2, ls/12), t, 0.16, "triangle", 0.42);
+  musicNote(ctx, MUSIC_BASE * 2 * Math.pow(2, ls/12), t, 0.09, "sine", 0.10);
+  // walking bass on every eighth
+  const bs = BASS_SEQ[i];
+  musicNote(ctx, BASS_BASE * Math.pow(2, bs/12), t, 0.20, "triangle", 0.55);
+  // soft hat on the offbeats for groove
+  if(HAT_ON[i]) musicHat(ctx, t);
   musicStep++;
 }
 function startMusic(){
   if(musicTimer) return;
-  musicTimer = setInterval(musicTick, 950);
+  musicTimer = setInterval(musicTick, 195);   // ~154 BPM eighth-notes
   musicTick();
 }
 function setMusicVol(v){
   musicVol = v;
   try{ localStorage.setItem("musicVol2248", String(v)); }catch(e){}
-  if(musicGain) musicGain.gain.value = (v / 100) * 0.15;
+  if(musicGain) musicGain.gain.value = (v / 100) * 0.13;
 }
 function refreshMusicUI(){
   const sl = document.getElementById("pauseMusicSlash");
@@ -7943,11 +8034,11 @@ refreshVibUI();
 // All palettes stay in the cool/dark night family so the navy UI cards
 // and the colourful tiles harmonize in every theme.
 const THEMES = [
-  { name:"Royal",    top:"#2a3caa", mid:"#1a2a6e", bot:"#111850" },
-  { name:"Nebula",   top:"#4a2c8a", mid:"#2a1a5e", bot:"#120a30" },
-  { name:"Abyss",    top:"#1c5068", mid:"#12344a", bot:"#081a28" },
-  { name:"Twilight", top:"#503080", mid:"#301e58", bot:"#160c34" },
-  { name:"Onyx",     top:"#3a4054", mid:"#232838", bot:"#10131c" }
+  { name:"Royal",    top:"#243066", mid:"#161d44", bot:"#0b0f2a" },
+  { name:"Nebula",   top:"#3a2670", mid:"#1f1448", bot:"#100828" },
+  { name:"Abyss",    top:"#18465e", mid:"#0f2c40", bot:"#061520" },
+  { name:"Twilight", top:"#422a6e", mid:"#241844", bot:"#120a28" },
+  { name:"Onyx",     top:"#2e3346", mid:"#1b1f2e", bot:"#0c0e16" }
 ];
 let themeIdx = 0;
 try{ const t = parseInt(localStorage.getItem("theme2248") || "0", 10);
