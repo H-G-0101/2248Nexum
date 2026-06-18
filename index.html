@@ -4193,6 +4193,16 @@ let elById = {};
 let uid = 1;
 let cell = 60;
 let score = 0;
+// All-time best score, persisted — the profile shows THIS, not the
+// volatile current-run score (which is 0 on the home screen).
+let bestScore = 0;
+try{ const bs = localStorage.getItem("bestScore2248"); if(bs){ const n = parseInt(bs,10); if(n > 0) bestScore = n; } }catch(e){}
+function bumpBestScore(){
+  if(score > bestScore){
+    bestScore = score;
+    try{ localStorage.setItem("bestScore2248", String(bestScore)); }catch(e){}
+  }
+}
 let gems = 94;
 // Light tamper guard: the balance is stored as "value|checksum". A hand
 // edited value fails the check and the balance falls back to the start
@@ -5086,6 +5096,7 @@ function resolveMerge(used, res){
   styleTile(head);
   head.el.classList.remove("pop"); void head.el.offsetWidth; head.el.classList.add("pop");
   score += res.result;
+  bumpBestScore();                     // keep all-time best score in sync
   if(res.result>=128){ gems += 1; gemSound(0.12); }
   if(res.result>highest) highest = res.result;
   // Record the highest block the moment it's created, so the profile
@@ -6026,7 +6037,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.42";
+const BUILD = "2026-06-13.43";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
@@ -6864,7 +6875,7 @@ function openProfile(){
     if(mc){ const f=document.getElementById("profCountryFlag"); if(f) f.textContent = flagEmoji(mc); }
   }catch(e){}
   const bs = document.getElementById("profBestScore");
-  if(bs) bs.textContent = formatScore(score);   // real cumulative score
+  if(bs) bs.textContent = formatScore(Math.max(bestScore, score));   // all-time best
   document.getElementById("profileModal").classList.add("open");
 }
 function closeProfile(){
@@ -7063,6 +7074,11 @@ function restoreState(st){
   }
   const recovered = Math.max(bestBlock, highest || 0, boardMax);
   if(recovered > bestBlock){ bestBlock = recovered; saveBest(); }
+  // recover all-time best score from the restored run if it's higher
+  if((st.score || 0) > bestScore){
+    bestScore = st.score;
+    try{ localStorage.setItem("bestScore2248", String(bestScore)); }catch(e){}
+  }
   // Restore the phase-start baseline so the bar doesn't shift on reload;
   // older saves without it fall back to the current board snapshot.
   phaseBase = (typeof st.phaseBase === "number") ? st.phaseBase : rawPhaseProgress();
