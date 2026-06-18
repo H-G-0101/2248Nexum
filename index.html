@@ -1122,7 +1122,8 @@ body{
 
 /* Scrollable items list */
 .shop-list{
-  overflow-y:auto;flex:1;padding:12px 14px;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  flex:1;min-height:0;padding:12px 14px 40px;
   display:flex;flex-direction:column;gap:10px;
 }
 .shop-list::-webkit-scrollbar{width:0;}
@@ -1457,6 +1458,7 @@ body{
 }
 .prof-blocks-grid{
   display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  padding-bottom:24px;
 }
 .prof-block{
   aspect-ratio:1;border-radius:10px;
@@ -6024,7 +6026,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.41";
+const BUILD = "2026-06-13.42";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
