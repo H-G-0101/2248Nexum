@@ -6024,7 +6024,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.40";
+const BUILD = "2026-06-13.41";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
@@ -7052,6 +7052,15 @@ function restoreState(st){
     board[r][c] = makeTile(v,c,r);
   }
   cullBelowFloor(false);   // evolving base: old saves may hold retired tiles
+  // RECONCILE the all-time best block: take the max of the saved best,
+  // the saved highest, and the largest tile actually on the restored
+  // board. This recovers records that predate per-merge best tracking.
+  let boardMax = 0;
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const t = board[r][c]; if(t && t.value > boardMax) boardMax = t.value;
+  }
+  const recovered = Math.max(bestBlock, highest || 0, boardMax);
+  if(recovered > bestBlock){ bestBlock = recovered; saveBest(); }
   // Restore the phase-start baseline so the bar doesn't shift on reload;
   // older saves without it fall back to the current board snapshot.
   phaseBase = (typeof st.phaseBase === "number") ? st.phaseBase : rawPhaseProgress();
