@@ -6172,7 +6172,7 @@ async function cidiInit(){
         } else {
           // server does NOT have it → never trust a local "claimed" flag
           try{ localStorage.removeItem("cidiMedal2248"); }catch(e){}
-          if(level >= CIDI_MEDAL_LEVEL){
+          if(cidiMaxLevelReached() >= CIDI_MEDAL_LEVEL){
             cidiMedalAttempts = 0;                 // reset cap for this fresh check
             cidiMedalMarkPending();                // mark eligible → flush will resend
           }
@@ -6202,6 +6202,18 @@ cidiInit().catch(e => console.warn("[CiDi] init error:", e && (e.message||e)));
 function reloadPersistedState(){
   try{ const v = parseGems(localStorage.getItem("gems2248")); if(v !== null) gems = v; persistGems(); }catch(e){}
   try{ const v = localStorage.getItem("best2248");  if(v !== null) bestBlock = parseInt(v,10) || 2; }catch(e){}
+  // Seed CiDi max-level from the persisted board save so MEDAL eligibility
+  // survives a fresh launch — the board itself is only read on Play, but
+  // the login-time medal self-heal needs the true max BEFORE that. This
+  // backfills the key for players who reached the goal before this fix.
+  try{
+    const sv = JSON.parse(localStorage.getItem("save2248")||"null");
+    if(sv){
+      const lvls = Math.max(parseInt(sv.level,10)||0, (parseInt(sv.journeyCompleted,10)||0)+1);
+      const cur  = parseInt(localStorage.getItem("cidiMaxLevel2248")||"0",10)||0;
+      if(lvls > cur) localStorage.setItem("cidiMaxLevel2248", String(lvls));
+    }
+  }catch(e){}
   try{ sfxOn   = localStorage.getItem("sfx2248")   !== "0"; }catch(e){}
   try{ musicOn = localStorage.getItem("music2248") !== "0"; }catch(e){}
   try{ const v = parseInt(localStorage.getItem("musicVol2248")||"",10); if(!isNaN(v)) musicVol = Math.max(0,Math.min(100,v)); }catch(e){}
@@ -6334,6 +6346,24 @@ function cidiFlushScore(){
 // with retry/backoff re-submits on every login until the platform
 // CONFIRMS — so a lost report self-heals on the next session.
 let cidiMedalAttempts = 0;
+// ── Eligibility is derived from a PERSISTED max-level, NEVER from the
+// volatile runtime `level` (which is 1 until the board save is read on
+// Play). Without this, the login-time self-heal below silently fails
+// for a player who reached the goal in a PAST session: the server says
+// "not owned", the stale local flag is cleared, but `level` is 1 at
+// login, so re-marking pending never fires → eligible-but-unbadged.
+function cidiPersistMaxLevel(){
+  try{
+    const cur = parseInt(localStorage.getItem("cidiMaxLevel2248")||"0",10)||0;
+    const mx  = Math.max(cur, level||0, (journeyCompleted||0)+1);
+    if(mx > cur) localStorage.setItem("cidiMaxLevel2248", String(mx));
+  }catch(e){}
+}
+function cidiMaxLevelReached(){
+  let stored = 0;
+  try{ stored = parseInt(localStorage.getItem("cidiMaxLevel2248")||"0",10)||0; }catch(e){}
+  return Math.max(stored, level||0, (journeyCompleted||0)+1);
+}
 function cidiMedalMarkPending(){
   try{
     if(localStorage.getItem("cidiMedal2248") !== "1")
@@ -6348,7 +6378,7 @@ function cidiFlushMedal(){
   try{ if(localStorage.getItem("cidiMedal2248") === "1"){ CIDI.medalOwned = true; return; } }catch(e){}
   let pending = false;
   try{ pending = localStorage.getItem("cidiMedalPend2248") === "1"; }catch(e){}
-  if(!pending && level >= CIDI_MEDAL_LEVEL){ pending = true; cidiMedalMarkPending(); }
+  if(!pending && cidiMaxLevelReached() >= CIDI_MEDAL_LEVEL){ pending = true; cidiMedalMarkPending(); }
   if(!pending || !CIDI.loggedIn) return;
   if(cidiMedalAttempts >= 6) return;            // per-session cap
   cidiMedalAttempts++;
@@ -6366,8 +6396,10 @@ function cidiFlushMedal(){
   });
 }
 function cidiMaybeClaimMedal(){
-  // Medal: "Reach Level 100" — persist eligibility FIRST, then flush
-  if(level >= CIDI_MEDAL_LEVEL) cidiMedalMarkPending();
+  // Medal: "Reach Level 100" — persist max-level eligibility FIRST so it
+  // survives a fresh launch, THEN flush (with login-time self-heal).
+  cidiPersistMaxLevel();
+  if(cidiMaxLevelReached() >= CIDI_MEDAL_LEVEL) cidiMedalMarkPending();
   cidiFlushMedal();
 }
 
@@ -6407,7 +6439,7 @@ function buildCidiDebug(){
   h += R("ad SDK available", yn(typeof CiDiSDK!=="undefined" && typeof CiDiSDK.showRewardedAd==="function"));
 
   h += H("MEDAL (goal: reach lvl " + CIDI_MEDAL_LEVEL + ")");
-  h += R("condition met", (level>=CIDI_MEDAL_LEVEL?'<span style="color:#6ee787">yes</span>':'<span style="color:#ff6b6b">no</span>')+' <span style="color:#7a88aa">(unlocked '+(journeyCompleted+1)+')</span>');
+  h += R("condition met", (cidiMaxLevelReached()>=CIDI_MEDAL_LEVEL?'<span style="color:#6ee787">yes</span>':'<span style="color:#ff6b6b">no</span>')+' <span style="color:#7a88aa">(max '+cidiMaxLevelReached()+' · unlocked '+(journeyCompleted+1)+')</span>');
   h += R("owned (server)", CIDI.medalOwned?'<span style="color:#6ee787">yes</span>':'<span style="color:#ff6b6b">no</span>');
   let medalLocal=false; try{ medalLocal = localStorage.getItem("cidiMedal2248")==="1"; }catch(e){}
   h += R("claimed (local)", medalLocal?'<span style="color:#6ee787">yes</span>':'<span style="color:#ff6b6b">no</span>');
