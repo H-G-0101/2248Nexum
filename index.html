@@ -1779,6 +1779,9 @@ body{
 .lb-body{
   flex:1;display:flex;flex-direction:column;
   overflow:hidden;
+  /* The bottom-nav floats fixed (z-index:200) over this modal so users can
+     switch tabs — reserve its height so the "my rank" footer clears it. */
+  padding-bottom:calc(86px + env(safe-area-inset-bottom));
 }
 
 /* List */
