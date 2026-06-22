@@ -4120,11 +4120,11 @@ let GOAL = 512;
 // cap out at DIFF_RAMP_TO, so early levels stay gentle (onboarding).
 const DIFF = {
   RAMP_FROM: 2,        // difficulty starts ramping at this level
-  RAMP_TO:   14,       // full difficulty reached here (earlier = harder sooner)
+  RAMP_TO:   8,        // full difficulty reached here (earlier = harder sooner)
   // Hostile spawn: how strongly low tiles are favoured over high tiles.
   // 0 = fully random (old behaviour). 1.0+ = strong low-tile bias.
-  LOW_BIAS_MAX: 1.1,   // bias toward clutter (low blocks) at full ramp
-  HIGH_CHOKE_MAX: 0.78,// how much the TOP useful tiles are suppressed
+  LOW_BIAS_MAX: 1.7,   // bias toward clutter (low blocks) at full ramp
+  HIGH_CHOKE_MAX: 0.9, // how much the TOP useful tiles are suppressed
 };
 function diffProgress(){   // 0..1 across the ramp for the current level
   const t = (level - DIFF.RAMP_FROM) / Math.max(1, DIFF.RAMP_TO - DIFF.RAMP_FROM);
