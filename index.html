@@ -4704,12 +4704,25 @@ function updateHUD(){
   updateGems();          // keep the diamond total in sync everywhere
 }
 function fmtGoal(v){
-  if(v >= 1e15)       return Math.floor(v/1e15) + "Q";          // quadrillion
-  if(v >= 1e12)       return Math.floor(v/1e12) + "T";          // 1099511627776 -> 1T
-  if(v >= 1000000000) return Math.floor(v/1000000000) + "B";    // 1073741824 -> 1B
-  if(v >= 1000000)    return Math.floor(v/1000000) + "M";       // 2097152->2M, 33554432->33M
-  if(v >= 16384)      return Math.floor(v/1000) + "K";          // 16384->16K, 65536->65K
-  return v;                                                     // 512..8192 shown in full
+  if(!isFinite(v))   return "\u221e";                          // safety past float range
+  if(v < 16384)      return v;                                 // 2..8192 shown in full
+  // Infinite suffix ladder: K, M, B, T, then two-letter aa, ab, ... (each ×1000).
+  // Mantissa runs 1..999 and rolls over to the next suffix — matches the way
+  // every block doubles (…167cr → 334cr → 669cr → 1cs …).
+  const log = Math.log10(v);
+  let g = Math.floor(log / 3);                                 // group: 1=K(10^3), 2=M …
+  if(g < 1) g = 1;
+  let mant = Math.floor(Math.pow(10, log - 3 * g));            // 1..999
+  if(mant < 1){ mant = 999; g -= 1; }                          // float-rounding guard
+  return mant + suffixForGroup(g);
+}
+// 1→K, 2→M, 3→B, 4→T, then 5→aa, 6→ab … 30→az, 31→ba … (infinite)
+function suffixForGroup(g){
+  const base = ["K","M","B","T"];
+  if(g <= 4) return base[g - 1];
+  const i = g - 5;                                             // 0 → "aa"
+  return String.fromCharCode(97 + Math.floor(i / 26)) +
+         String.fromCharCode(97 + (i % 26));
 }
 
 // ── Phase progression ──────────────────────────────────────────
@@ -7603,18 +7616,17 @@ function clearManualCountry(){
 
 function formatScore(n){
   // Exact number with thousand separators below 1M (e.g. "145.500").
-  // From 1M up: one decimal place, TRUNCATED (not rounded up), so
-  // 1.500.000 → "1,5M", 2.340.000 → "2,3M", 2.900.000 → "2,9M".
-  // Drop a trailing ",0" so exact millions show clean: 1.000.000 → "1M".
+  // From 1M up: one decimal place TRUNCATED, with the SAME infinite suffix
+  // ladder as the tiles (M, B, T, aa, ab, … az, ba …) so huge scores never
+  // overflow. 1.500.000 → "1,5M"; 2.340.000.000 → "2,3B"; 10^15 → "1aa".
   n = Number(n);
-  const fmt = (v, suffix) => {
-    const t = Math.floor(v * 10) / 10;          // truncate to 1 decimal
-    const str = (t % 1 === 0) ? String(t) : t.toFixed(1).replace('.', ',');
-    return str + suffix;
-  };
-  if(n >= 1e9) return fmt(n/1e9, 'B');
-  if(n >= 1e6) return fmt(n/1e6, 'M');
-  return n.toLocaleString('pt-BR');
+  if(!isFinite(n)) return "\u221e";
+  if(n < 1e6) return n.toLocaleString('pt-BR');
+  const log = Math.log10(n);
+  const g = Math.floor(log / 3);                 // 2=M, 3=B, 4=T, 5=aa …
+  const mant = Math.floor(Math.pow(10, log - 3 * g) * 10) / 10;   // 1 decimal, truncated
+  const str = (mant % 1 === 0) ? String(mant) : mant.toFixed(1).replace('.', ',');
+  return str + suffixForGroup(g);
 }
 
 function rankMedalHTML(rank){
