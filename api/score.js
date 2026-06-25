@@ -12,7 +12,11 @@ export default async function handler(req, res){
   if(typeof id !== 'string' || !/^[A-Za-z0-9-]{8,40}$/.test(id))
     return res.status(400).json({ error: 'id' });
   const s = Number(score);
-  if(!Number.isFinite(s) || s < 0 || s > 1e10 || Math.floor(s) !== s)
+  // Upper bound is a sanity guard against impossible/hacked values, not a
+  // real gameplay ceiling. 1e10 was too low for an endless game (scores
+  // got silently rejected past ~10B and the board froze at 9,9B). Use
+  // Number.MAX_SAFE_INTEGER (~9e15) so legitimate high scores go through.
+  if(!Number.isFinite(s) || s < 0 || s > Number.MAX_SAFE_INTEGER || Math.floor(s) !== s)
     return res.status(400).json({ error: 'score' });
   const cleanNick =
     String(nick || '').replace(/[<>&"'`]/g, '').trim().slice(0, 14) || 'Player';
