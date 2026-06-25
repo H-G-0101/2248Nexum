@@ -6037,7 +6037,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.44";
+const BUILD = "2026-06-13.45";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
@@ -6093,6 +6093,12 @@ async function cidiInit(){
       cidiFlushMedal();
       cidiFlushTask();      // same-day window only
       cidiFlushScore();     // terminal-session score
+      // Re-push our own leaderboard score on login too, so anyone whose
+      // real score was once rejected by the old 10B server cap gets their
+      // true bestScore re-sent (server now accepts it) without waiting for
+      // the next phase win. gt:true means it only ever moves the score up.
+      lbLastSubmit = 0;
+      lbSubmitScore();
     }
   }catch(e){
     // login failed (e.g. expired tempToken when opened outside a fresh
@@ -7512,7 +7518,8 @@ function lbSubmitScore(){
   try{
     let manualCC = "";
     try{ manualCC = localStorage.getItem("countryManual2248") || ""; }catch(e){}
-    const payload = { id: playerId, nick: playerNick, score: score, av: myAvatar };
+    const sendScore = Math.max(score, (typeof bestScore === 'number' ? bestScore : 0));
+    const payload = { id: playerId, nick: playerNick, score: sendScore, av: myAvatar };
     if(manualCC) payload.country = manualCC;        // override if user picked one
     fetch(LB_API + '/api/score', {
       method: 'POST',
