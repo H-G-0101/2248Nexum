@@ -4319,7 +4319,7 @@ function updateHome(){
   }
   const lv = $("#homeLevelText"); if(lv) lv.textContent = "LEVEL " + (journeyCompleted + 1);
 }
-function fontFor(v){ const len=(''+v).length; if(len<=2) return cell*0.40; if(len===3) return cell*0.34; if(len===4) return cell*0.27; return cell*0.22; }
+function fontFor(v){ const len=(''+v).length; if(len<=2) return cell*0.40; if(len===3) return cell*0.34; if(len===4) return cell*0.27; if(len===5) return cell*0.22; if(len===6) return cell*0.18; return cell*0.15; }
 
 function computeCell(){
   const W = boardWrap.clientWidth;
@@ -4665,12 +4665,19 @@ function updateHUD(){
   updateGems();          // keep the diamond total in sync everywhere
 }
 function fmtGoal(v){
-  if(v >= 1e15)       return Math.floor(v/1e15) + "Q";          // quadrillion
-  if(v >= 1e12)       return Math.floor(v/1e12) + "T";          // 1099511627776 -> 1T
-  if(v >= 1000000000) return Math.floor(v/1000000000) + "B";    // 1073741824 -> 1B
-  if(v >= 1000000)    return Math.floor(v/1000000) + "M";       // 2097152->2M, 33554432->33M
-  if(v >= 16384)      return Math.floor(v/1000) + "K";          // 16384->16K, 65536->65K
-  return v;                                                     // 512..8192 shown in full
+  v = Number(v);
+  if(!isFinite(v) || v < 0) return "0";                         // guard NaN/Infinity
+  // Extended scale so huge tiles never fall back to raw digits or
+  // scientific notation (which overflowed the board on big saves).
+  const UNITS = [
+    [1e30,"e"],[1e27,"o"],[1e24,"Sx"],[1e21,"Sp"],
+    [1e18,"Qi"],[1e15,"Q"],[1e12,"T"],[1e9,"B"],[1e6,"M"]
+  ];
+  for(const [base,suf] of UNITS){
+    if(v >= base) return Math.floor(v/base) + suf;
+  }
+  if(v >= 16384) return Math.floor(v/1000) + "K";               // 16384->16K
+  return String(Math.floor(v));                                 // 512..8192 in full
 }
 
 // ── Phase progression ──────────────────────────────────────────
@@ -6043,7 +6050,7 @@ let adShowing = false;
 // Build tag — bump on every deploy; check it in the console (or via
 // javascript:alert(BUILD) in the address bar) to confirm which build
 // is live and rule out stale-deploy confusion.
-const BUILD = "2026-06-13.47";
+const BUILD = "2026-06-13.48";
 console.log("[2248 Nexum] build", BUILD);
 
 const CIDI_API_KEY = "CIDI_E2CDBEDE2CD546D5";
@@ -7489,18 +7496,21 @@ function clearManualCountry(){
 
 function formatScore(n){
   // Exact number with thousand separators below 1M (e.g. "145.500").
-  // From 1M up: one decimal place, TRUNCATED (not rounded up), so
-  // 1.500.000 → "1,5M", 2.340.000 → "2,3M", 2.900.000 → "2,9M".
-  // Drop a trailing ",0" so exact millions show clean: 1.000.000 → "1M".
+  // From 1M up: one decimal place, TRUNCATED, e.g. 1,5M / 2,3M.
+  // Guards against NaN/Infinity and very large values so the HUD never
+  // shows scientific notation (e.g. 5.22e+33) on corrupted/huge saves.
   n = Number(n);
+  if(!isFinite(n) || n < 0) return "0";
   const fmt = (v, suffix) => {
     const t = Math.floor(v * 10) / 10;          // truncate to 1 decimal
     const str = (t % 1 === 0) ? String(t) : t.toFixed(1).replace('.', ',');
     return str + suffix;
   };
-  if(n >= 1e12) return fmt(n/1e12, 'T');
-  if(n >= 1e9)  return fmt(n/1e9, 'B');
-  if(n >= 1e6)  return fmt(n/1e6, 'M');
+  const UNITS = [
+    [1e30,'e'],[1e27,'o'],[1e24,'Sx'],[1e21,'Sp'],
+    [1e18,'Qi'],[1e15,'Q'],[1e12,'T'],[1e9,'B'],[1e6,'M']
+  ];
+  for(const [base,suf] of UNITS){ if(n >= base) return fmt(n/base, suf); }
   return n.toLocaleString('pt-BR');
 }
 
